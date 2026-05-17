@@ -2,6 +2,8 @@
 
 Shared Rails engine for McRitchie apps. Provides authentication, error handling, dynamic theming, and common concerns used by [McRitchie Studio](https://app.mcritchie.studio) and [Turf Monster](https://turf.mcritchie.studio).
 
+> **Part of the McRitchie ecosystem** — see [`ECOSYSTEM.md`](https://github.com/amcritchie/mcritchie_studio/blob/main/docs/ECOSYSTEM.md) for the 5-repo map; [`house-burn-down.md`](https://github.com/amcritchie/mcritchie_studio/blob/main/docs/agents/system/house-burn-down.md) for fresh-Mac recovery.
+
 ## Installation
 
 ```ruby
