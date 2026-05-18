@@ -19,6 +19,20 @@ class ErrorLog < ApplicationRecord
       backtrace: cleaned.to_json
     )
     log.update_column(:slug, "error-log-#{log.id}")
+
+    # Fan out to Sentry if the host app loaded sentry-ruby. Guard with
+    # respond_to? so we don't blow up on old SDK versions. The DB ErrorLog
+    # row remains the local triage view; Sentry is the paging layer.
+    if defined?(::Sentry) && ::Sentry.respond_to?(:capture_exception)
+      begin
+        ::Sentry.capture_exception(exception) do |scope|
+          scope.set_tags(error_log_slug: log.slug)
+        end
+      rescue => e
+        Rails.logger.warn "[ErrorLog.capture!] Sentry delivery failed: #{e.class}: #{e.message}"
+      end
+    end
+
     log
   end
 end
