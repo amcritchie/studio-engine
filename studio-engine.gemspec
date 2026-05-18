@@ -4,7 +4,7 @@ Gem::Specification.new do |spec|
   spec.name        = "studio-engine"
   spec.version     = Studio::VERSION
   spec.authors     = ["Alex McRitchie"]
-  spec.email       = ["alex@mcritchie.studio"]
+  spec.email       = ["studio-engine@mcritchie.studio"]
   spec.summary     = "Shared Rails engine providing auth, SSO, error logging, theming, and S3-backed image caching"
   spec.description = "Studio Engine is a non-isolated Rails engine that ships an opinionated authentication + SSO contract, a polymorphic ErrorLog model, a Sluggable concern, a 7-role dynamic theme system with CSS-custom-property generation, and an S3-backed ImageCache. Used in production across the McRitchie Studio + Turf Monster apps."
   spec.homepage    = "https://github.com/amcritchie/studio-engine"

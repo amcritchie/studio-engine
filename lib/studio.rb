@@ -25,10 +25,16 @@ module Studio
   mattr_accessor :theme_danger,   default: "#EF4444"
   mattr_accessor :theme_accent,   default: "#F72585"
 
-  # S3 / object storage — default bucket prefix is the shared "mcritchie-studio"
-  # bucket. Apps with their own bucket override this in config/initializers/studio.rb.
-  mattr_accessor :s3_bucket_prefix, default: "mcritchie-studio"
+  # S3 / object storage — host apps MUST set s3_bucket_prefix explicitly in
+  # config/initializers/studio.rb before any S3-touching code runs (ImageCache,
+  # Studio::S3.upload, etc.). Default is nil so external users don't accidentally
+  # target someone else's bucket if they forget to configure.
+  #
+  # Bucket name resolves to "#{s3_bucket_prefix}-#{Rails.env.production? ? 'production' : 'dev'}".
+  mattr_accessor :s3_bucket_prefix, default: nil
   mattr_accessor :s3_region,        default: "us-east-2"
+
+  class S3ConfigError < StandardError; end
 
   # Whether to validate the host app's User model at boot. See docs/USER_CONTRACT.md.
   # Set to false in config/initializers/studio.rb to bypass (e.g. during migrations
@@ -68,12 +74,13 @@ module Studio
     return if missing.empty?
 
     raise UserContractError, <<~MSG
-      The Studio engine's expected User model contract is not satisfied.
+      The studio-engine gem's expected User model contract is not satisfied.
 
       Missing: #{missing.join(", ")}
 
-      See https://github.com/amcritchie/studio/blob/main/docs/USER_CONTRACT.md
-      for the full contract + a minimal compliant example.
+      See the USER_CONTRACT.md doc in the studio-engine repo for the full
+      contract + a minimal compliant example:
+        https://github.com/amcritchie/studio-engine/blob/main/docs/USER_CONTRACT.md
 
       To bypass this check temporarily, set Studio.validate_user_contract = false
       in config/initializers/studio.rb.

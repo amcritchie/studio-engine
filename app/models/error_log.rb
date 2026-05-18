@@ -13,9 +13,16 @@ class ErrorLog < ApplicationRecord
   def self.capture!(exception)
     cleaned = Rails.backtrace_cleaner.clean(exception.backtrace || [])
 
+    # Don't store exception.inspect — Ruby's default inspect for many error
+    # subclasses includes ivar dumps that can carry secrets (API keys read
+    # from ENV into a local, request bodies, etc.). Store just class +
+    # truncated message instead. Apps that need richer context should
+    # capture it explicitly via target/parent or via Sentry's PII rules.
+    safe_inspect = "#<#{exception.class}: #{exception.message.to_s[0, 1000]}>"
+
     log = create!(
       message: exception.message,
-      inspect: exception.inspect,
+      inspect: safe_inspect,
       backtrace: cleaned.to_json
     )
     log.update_column(:slug, "error-log-#{log.id}")

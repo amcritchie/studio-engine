@@ -2,7 +2,27 @@
 
 **Date:** 2026-05-17 (pre-publication)
 **Scope:** Full code review + `gitleaks` git-history scan + `bundle-audit` dependency check
-**Verdict:** **NEEDS FIXES before public RubyGems publication**
+**Verdict:** **NEEDS FIXES before public RubyGems publication** → **all HIGH + most MEDIUM addressed in v0.4.1** (see "Status after v0.4.1" below)
+
+## Status after v0.4.1
+
+| # | Severity | Issue | Status |
+|---|----------|-------|--------|
+| 1 | HIGH | S3 bucket prefix default | ✅ Fixed — default is nil; `Studio::S3.bucket` already raises `NotConfigured` if unset |
+| 2 | HIGH | Hardcoded `amcritchie/studio` URL in UserContractError | ✅ Fixed — now points at `amcritchie/studio-engine` |
+| 3 | HIGH | SSRF in ImageCache `URI.open(source_url)` | ✅ Fixed — `validate_source_url!` rejects non-http(s), private/loopback/link-local IPs, common internal hostnames |
+| 4 | MEDIUM | MIME type allowlist + decompression bomb | ✅ Fixed — `ALLOWED_CONTENT_TYPES` check + MiniMagick `-limit memory/map/width/height` per invocation + `MAX_REMOTE_BYTES = 50MB` cap |
+| 5 | MEDIUM | s3_bucket_prefix not validated at config | ✅ Fixed (via #1 — failure surfaces at first S3 call) |
+| 6 | MEDIUM | `exception.inspect` ivar dump in ErrorLog | ✅ Fixed — only stores sanitized `"#<{class}: {message[0,1000]}>"` |
+| 7 | MEDIUM | Personal email in gemspec | ✅ Fixed — `studio-engine@mcritchie.studio` |
+| 8 | MEDIUM | Missing LICENSE file | ✅ Fixed — MIT LICENSE added at repo root |
+| 9 | LOW | User contract arity check | ⏳ Deferred (additive; not a blocker) |
+| 10 | LOW | Hex color validation on ThemeSetting | ⏳ Deferred (admin-only path) |
+| 11 | INFO | ErrorLog PII docs | ⏳ Deferred (separate docs pass) |
+
+**Re-audit recommended after v0.4.1** before flipping the repo public + pushing to RubyGems.
+
+---
 
 ## TL;DR
 
