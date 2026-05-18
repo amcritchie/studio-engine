@@ -30,8 +30,49 @@ module Studio
   mattr_accessor :s3_bucket_prefix, default: "mcritchie-studio"
   mattr_accessor :s3_region,        default: "us-east-2"
 
+  # Whether to validate the host app's User model at boot. See docs/USER_CONTRACT.md.
+  # Set to false in config/initializers/studio.rb to bypass (e.g. during migrations
+  # that intentionally break the contract).
+  mattr_accessor :validate_user_contract, default: true
+
+  REQUIRED_USER_INSTANCE_METHODS = %i[authenticate admin? email display_name].freeze
+  REQUIRED_USER_CLASS_METHODS    = %i[find_by].freeze
+
+  class UserContractError < StandardError; end
+
   def self.configure
     yield self
+  end
+
+  # Verifies that the host app's User model satisfies the engine's expected
+  # contract. Raises Studio::UserContractError with a clear pointer to
+  # docs/USER_CONTRACT.md if anything required is missing. Called from
+  # Engine#after_initialize. Opt out via Studio.validate_user_contract = false.
+  def self.validate_user_contract!(user_class)
+    return unless validate_user_contract
+    return unless user_class.is_a?(Class)
+
+    missing = []
+    REQUIRED_USER_CLASS_METHODS.each do |m|
+      missing << "User.#{m}" unless user_class.respond_to?(m)
+    end
+    REQUIRED_USER_INSTANCE_METHODS.each do |m|
+      missing << "User##{m}" unless user_class.instance_methods.include?(m)
+    end
+
+    return if missing.empty?
+
+    raise UserContractError, <<~MSG
+      The Studio engine's expected User model contract is not satisfied.
+
+      Missing: #{missing.join(", ")}
+
+      See https://github.com/amcritchie/studio/blob/main/docs/USER_CONTRACT.md
+      for the full contract + a minimal compliant example.
+
+      To bypass this check temporarily, set Studio.validate_user_contract = false
+      in config/initializers/studio.rb.
+    MSG
   end
 
   def self.theme_config
