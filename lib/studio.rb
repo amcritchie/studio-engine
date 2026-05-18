@@ -35,7 +35,12 @@ module Studio
   # that intentionally break the contract).
   mattr_accessor :validate_user_contract, default: true
 
-  REQUIRED_USER_INSTANCE_METHODS = %i[authenticate admin? email display_name].freeze
+  # Only methods that consumers must explicitly define are checked here.
+  # Column accessors (#email, #name, #role) are NOT validated because
+  # ActiveRecord defines them lazily — they don't appear on `.instance_methods`
+  # until the schema is introspected (typically first record access). Missing
+  # columns are caught by the User table schema, not by this validator.
+  REQUIRED_USER_INSTANCE_METHODS = %i[authenticate admin? display_name].freeze
   REQUIRED_USER_CLASS_METHODS    = %i[find_by].freeze
 
   class UserContractError < StandardError; end
