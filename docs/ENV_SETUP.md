@@ -18,7 +18,7 @@ All apps use `dotenv-rails` which walks up the directory tree, so a `.env` at th
 | `GOOGLE_CLIENT_ID` | All apps | Google Cloud Console | See [GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md). Go to [APIs & Services > Credentials](https://console.cloud.google.com/apis/credentials), create/find the OAuth 2.0 Client ID. |
 | `GOOGLE_CLIENT_SECRET` | All apps | Google Cloud Console | Same location as Client ID — click the OAuth client to reveal the secret. |
 | `ANTHROPIC_API_KEY` | Tax Studio | Anthropic Console | Go to [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys), create an API key. Used for AI expense classification. |
-| `SOLANA_ADMIN_KEY` | Turf Monster | Solana CLI | The base58-encoded keypair for the admin wallet (`F6f8h5y...`). Export with `solana config get keypair` then `cat` the file contents. See [SOLANA docs](../../turf_monster/docs/SOLANA.md). |
+| `SOLANA_ADMIN_KEY` | Turf Monster | Solana CLI | The base58-encoded keypair for the admin wallet (`F6f8h5y...`). Export with `solana config get keypair` then `cat` the file contents. See [SOLANA docs](../../turf-monster/docs/SOLANA.md). |
 
 ## Recreating From Scratch
 
@@ -31,7 +31,7 @@ touch /Users/alex/projects/.env
 ### 2. SECRET_KEY_BASE
 
 ```bash
-cd /Users/alex/projects/mcritchie_studio  # any Rails app
+cd /Users/alex/projects/mcritchie-studio  # any Rails app
 echo "SECRET_KEY_BASE=$(bin/rails secret)" >> /Users/alex/projects/.env
 ```
 

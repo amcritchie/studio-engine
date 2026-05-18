@@ -2,13 +2,13 @@
 
 Shared Rails engine for McRitchie apps. Provides authentication, error handling, dynamic theming, and common concerns used by [McRitchie Studio](https://app.mcritchie.studio) and [Turf Monster](https://turf.mcritchie.studio).
 
-> **Part of the McRitchie ecosystem** — see [`ECOSYSTEM.md`](https://github.com/amcritchie/mcritchie_studio/blob/main/docs/ECOSYSTEM.md) for the 5-repo map; [`house-burn-down.md`](https://github.com/amcritchie/mcritchie_studio/blob/main/docs/agents/system/house-burn-down.md) for fresh-Mac recovery.
+> **Part of the McRitchie ecosystem** — see [`ECOSYSTEM.md`](https://github.com/amcritchie/mcritchie-studio/blob/main/docs/ECOSYSTEM.md) for the 5-repo map; [`house-burn-down.md`](https://github.com/amcritchie/mcritchie-studio/blob/main/docs/agents/system/house-burn-down.md) for fresh-Mac recovery.
 
 ## Installation
 
 ```ruby
 # Gemfile — pin to a tag (recommended; see Releases section)
-gem "studio", git: "https://github.com/amcritchie/studio.git", tag: "v0.3.0"
+gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git", tag: "v0.3.0"
 ```
 
 Then `bundle install`. The current release is **v0.3.0**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
@@ -80,13 +80,13 @@ When iterating on engine code from a consumer app, point bundler at the local pa
 
 ```bash
 # in the consumer app
-bundle config set --local local.studio /Users/alex/projects/studio
+bundle config set --local local.studio /Users/alex/projects/studio-engine
 bundle install
 # ... iterate in both repos ...
 bundle config unset --local local.studio  # restore tag-pinned resolution
 ```
 
-Note: `bundle config local.studio` requires `branch:` in the Gemfile entry. If you frequently develop locally, change the Gemfile to `gem "studio", git: "...", branch: "main"` during dev and back to `tag:` before merging.
+Note: `bundle config local.studio` requires `branch:` in the Gemfile entry. If you frequently develop locally, change the Gemfile to `gem "studio-engine", git: "...", branch: "main"` during dev and back to `tag:` before merging.
 
 ## Development Notes
 

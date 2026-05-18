@@ -6,11 +6,11 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 
 **`Bundler::GemNotFound` for studio**
 - Diagnosis: Gemfile points to GitHub but bundle can't fetch. Network issue or repo is private.
-- Fix: Test connectivity: `git ls-remote https://github.com/amcritchie/studio.git`. If it fails, check GitHub status and SSH/HTTPS auth. In the consuming app: `bundle install --verbose`.
+- Fix: Test connectivity: `git ls-remote https://github.com/amcritchie/studio-engine.git`. If it fails, check GitHub status and SSH/HTTPS auth. In the consuming app: `bundle install --verbose`.
 
 **Engine classes not available (NameError)**
 - Diagnosis: `ErrorLog`, `Sluggable`, or `Studio::ErrorHandling` not found. Engine not loaded.
-- Fix: Verify `gem "studio", git: "https://github.com/amcritchie/studio.git"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
+- Fix: Verify `gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
 
 **`Studio` constant undefined at boot**
 - Diagnosis: Initializer runs before engine loads.
@@ -23,12 +23,12 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 - Fix: The override path must match exactly. Engine view at `studio/app/views/sessions/new.html.erb` is overridden by `myapp/app/views/sessions/new.html.erb`. Check for typos in directory names. Common overrides: `sessions/new`, `registrations/new`, `sessions/_sso_continue`, `components/_admin_dropdown`.
 
 **Cached view showing old engine version**
-- Diagnosis: After `bundle update studio`, Rails may serve a cached view from the previous engine version.
+- Diagnosis: After `bundle update studio-engine`, Rails may serve a cached view from the previous engine version.
 - Fix: Restart the Rails server. In development: `bin/rails tmp:cache:clear`. On Heroku, deploys clear the cache automatically.
 
 **Partial not found after engine update**
 - Diagnosis: Engine partial was renamed or moved. `ActionView::MissingTemplate` error.
-- Fix: Check the engine's current view paths: `ls /Users/alex/projects/studio/app/views/`. If the app has a local override of a removed partial, delete the app's version.
+- Fix: Check the engine's current view paths: `ls /Users/alex/projects/studio-engine/app/views/`. If the app has a local override of a removed partial, delete the app's version.
 
 ## Theme Not Updating
 
@@ -71,18 +71,18 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 ## Updating Engine and Pushing to Consumers
 
 **Standard update flow**
-1. Make changes in `/Users/alex/projects/studio/`
-2. Run engine tests: `cd /Users/alex/projects/studio && bin/rails test` (runs from a consuming app -- engine has no standalone harness)
+1. Make changes in `/Users/alex/projects/studio-engine/`
+2. Run engine tests: `cd /Users/alex/projects/mcritchie-studio && bin/rails test` (runs from a consuming app — engine has no standalone harness)
 3. Commit and push: `git add -A && git commit -m "description" && git push`
-4. In McRitchie Studio: `cd /Users/alex/projects/mcritchie_studio && bundle update studio`
-5. In Turf Monster: `cd /Users/alex/projects/turf_monster && bundle update studio`
+4. In McRitchie Studio: `cd /Users/alex/projects/mcritchie-studio && bundle update studio-engine`
+5. In Turf Monster: `cd /Users/alex/projects/turf-monster && bundle update studio-engine`
 6. Test both apps: `bin/rails test` in each
 7. Deploy both if all tests pass
 
 **Consumer locked to old version**
-- Diagnosis: `bundle update studio` doesn't pull the latest. Bundler may be caching the old ref.
-- Fix: `rm -rf vendor/cache/studio-*` in the consuming app, then `bundle update studio`. Check `Gemfile.lock` to verify the new revision.
+- Diagnosis: `bundle update studio-engine` doesn't pull the latest. Bundler may be caching the old ref.
+- Fix: `rm -rf vendor/cache/studio-*` in the consuming app, then `bundle update studio-engine`. Check `Gemfile.lock` to verify the new revision.
 
 **Engine test approach**
 - Diagnosis: The engine has no standalone test harness. Tests run inside consuming apps.
-- Fix: Engine unit tests (ColorScale, ThemeResolver) live in consuming app test suites. To test engine changes: make the change, `bundle update studio` in a consuming app, run `bin/rails test` there. Critical test targets: `Studio::ColorScale`, `Studio::ThemeResolver`, `ErrorLog.capture!`, `Sluggable`.
+- Fix: Engine unit tests (ColorScale, ThemeResolver) live in consuming app test suites. To test engine changes: make the change, `bundle update studio-engine` in a consuming app, run `bin/rails test` there. Critical test targets: `Studio::ColorScale`, `Studio::ThemeResolver`, `ErrorLog.capture!`, `Sluggable`.

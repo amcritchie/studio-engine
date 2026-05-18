@@ -5,10 +5,12 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 ## v0.4.0 (2026-05-17)
 
 ### Changed (breaking)
-- **Gem renamed from `studio` to `studio-engine`.** Repo URL is now `github.com/amcritchie/studio-engine`. Consumers must update their `Gemfile`:
-  ```diff
-  - gem "studio", git: "https://github.com/amcritchie/studio.git", tag: "v0.3.1"
-  + gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git", tag: "v0.4.0"
+- **Gem renamed from `studio` to `studio-engine`.** Repo URL is now `github.com/amcritchie/studio-engine` (was `.../studio`). Consumers must update their `Gemfile`:
+  ```ruby
+  # Before:
+  gem "studio", git: "https://github.com/amcritchie/studio.git", tag: "v0.3.1"
+  # After:
+  gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git", tag: "v0.4.0"
   ```
 - The Ruby `Studio` module name is **unchanged** — all call sites (`Studio.configure`, `Studio::ErrorHandling`, `Studio::ImageCache`, etc.) keep working without code changes.
 - Gem entry point at `lib/studio-engine.rb` (a thin `require_relative "studio"` shim) ensures `gem "studio-engine"` auto-requires correctly without a `require:` option in the Gemfile.
@@ -33,7 +35,7 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 - Stage badge color schemes are additive — existing `success/danger/warning/info/violet/primary/orange/emerald/gray/neutral` schemes unchanged.
 
 ### Notes
-- Both current consumer apps (mcritchie_studio, turf_monster) already satisfy the new User contract — validator is a no-op for them.
+- Both current consumer apps (mcritchie-studio, turf-monster) already satisfy the new User contract — validator is a no-op for them.
 
 ## v0.2.4 (pre-2026-05-17)
 

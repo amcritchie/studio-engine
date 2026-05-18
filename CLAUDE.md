@@ -2,10 +2,10 @@
 
 Shared Rails engine gem for McRitchie apps. Provides auth, error handling, and common models so both apps stay in sync.
 
-- **GitHub**: https://github.com/amcritchie/studio
-- **Gem name**: `studio` (hosted on GitHub, not RubyGems — name "studio" is taken there)
-- **Version**: 0.2.4
-- **Consumed by**: McRitchie Studio (`mcritchie_studio/`), Turf Monster (`turf_monster/`), and Tax Studio (`tax_studio/`)
+- **GitHub**: https://github.com/amcritchie/studio-engine
+- **Gem name**: `studio-engine` (renamed from `studio` in v0.4.0 to free up the `studio` name on RubyGems and to make the role clearer)
+- **Version**: 0.4.0
+- **Consumed by**: McRitchie Studio (`mcritchie-studio/`), Turf Monster (`turf-monster/`), and Tax Studio (`tax-studio/`)
 - **Docs**: `docs/` directory — `NAVBAR_SETUP.md`, `GOOGLE_AUTH_SETUP.md`, `ENV_SETUP.md`, `NEW_APP_SETUP.md`
 
 ## Architecture
@@ -221,10 +221,12 @@ McRitchie Studio is the central auth hub. Satellite apps (Turf Monster, future a
 
 ## Updating the Engine
 
-1. Make changes in `/Users/alex/projects/studio/`
+1. Make changes in `/Users/alex/projects/studio-engine/`
 2. Commit and push to GitHub
-3. In each app: `bundle update studio` to pull the latest
-4. Test both apps after updating
+3. Bump `lib/studio/version.rb` + CHANGELOG.md, tag `v0.X.Y`, push tag
+4. In each consumer app: bump the `tag:` in Gemfile, `bundle update studio-engine`, test
+
+See README.md "Releasing" section for the full flow.
 
 ## Testing
 

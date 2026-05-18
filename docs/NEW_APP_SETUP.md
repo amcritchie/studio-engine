@@ -24,7 +24,7 @@ Pick the next available port (see port assignments in top-level CLAUDE.md):
 
 ```ruby
 # Studio engine
-gem "studio", git: "https://github.com/amcritchie/studio.git"
+gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git"
 
 # CSS
 gem "tailwindcss-rails", "~> 2.7"
@@ -394,7 +394,7 @@ If the app needs Solana wallet auth and/or on-chain operations, add this on top 
 ### Additional Gems
 
 ```ruby
-gem "solana_studio", git: "https://github.com/amcritchie/solana_studio.git"
+gem "solana-studio", git: "https://github.com/amcritchie/solana-studio.git"
 gem "ed25519"           # Signature verification
 gem "sidekiq"           # Background jobs (ATA creation, balance sync)
 ```
@@ -440,7 +440,7 @@ end
 
 ### Services to Copy
 
-From `turf_monster/app/services/solana/`:
+From `turf-monster/app/services/solana/`:
 - `config.rb` — env var accessors
 - `keypair.rb` — Rails extensions (admin keypair, encryption)
 - `auth_verifier.rb` — Phantom signature verification
@@ -448,7 +448,7 @@ From `turf_monster/app/services/solana/`:
 
 ### JS Modules to Copy
 
-From `turf_monster/app/javascript/`:
+From `turf-monster/app/javascript/`:
 - `solana_utils.js` — Base58, balance refresh, shared utilities
 - `phantom_deeplink.js` — Mobile Phantom deep linking
 
@@ -476,4 +476,4 @@ SOLANA_RPC_URL=https://api.devnet.solana.com
 - **Balance**: `balance_cents` (real, withdrawable) + `promotional_cents` (bonus, used first)
 - **Seeds/Level**: On-chain progression system, 60 seeds per entry
 
-See `turf_monster/docs/SOLANA.md` and `turf_monster/docs/AUTH.md` for full architecture.
+See `turf-monster/docs/SOLANA.md` and `turf-monster/docs/AUTH.md` for full architecture.
