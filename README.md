@@ -7,11 +7,13 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 ## Installation
 
 ```ruby
-# Gemfile
-gem "studio", git: "https://github.com/amcritchie/studio.git"
+# Gemfile — pin to a tag (recommended; see Releases section)
+gem "studio", git: "https://github.com/amcritchie/studio.git", tag: "v0.3.0"
 ```
 
-Then `bundle install`.
+Then `bundle install`. The current release is **v0.3.0**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+
+> Pinning to a tag (not `main`) is now the recommended pattern. Consumer apps that track `main` will silently inherit any engine merge — bad when one merge breaks several apps at once.
 
 ## What It Provides
 
@@ -54,17 +56,37 @@ This draws: `/login`, `/signup`, `/logout`, `/sso_continue`, `/sso_login`, `/aut
 
 This is a non-isolated engine -- app views at the same path automatically override engine views. For example, placing `app/views/sessions/new.html.erb` in the consuming app replaces the engine's login page.
 
-## Updating
+## Releasing
 
-After making changes to this repo:
+Engine releases are git tags (semver: `MAJOR.MINOR.PATCH`). Both consumer apps pin to a tag in their Gemfile — bumping the tag is the release.
+
+1. Make + commit changes on `main`.
+2. Update [`CHANGELOG.md`](./CHANGELOG.md) with the new version + a `### Added` / `### Changed` / `### Removed` summary. Keep entries terse.
+3. Bump `lib/studio/version.rb` to match.
+4. Commit the version bump + CHANGELOG together (`v0.X.Y: <summary>`).
+5. Tag: `git tag -a v0.X.Y -m "<one-line summary>"`.
+6. Push: `git push origin main --tags`.
+7. In each consumer app's Gemfile, update the `tag:` field. Commit + push.
+8. On consumer prod: `bundle install` runs as part of the deploy buildpack.
+
+**Semver guide**
+- **PATCH**: bug fix; no API change. Consumers can bump tag with zero diff elsewhere.
+- **MINOR**: backward-compatible feature add. Consumers may opt in to new APIs.
+- **MAJOR**: breaking change. Consumers will need code changes alongside the tag bump.
+
+## Local development (against an unreleased engine)
+
+When iterating on engine code from a consumer app, point bundler at the local path so you don't need to push + tag for every edit:
 
 ```bash
-# Push changes to GitHub
-git push origin main
-
-# In each consuming app
-bundle update studio
+# in the consumer app
+bundle config set --local local.studio /Users/alex/projects/studio
+bundle install
+# ... iterate in both repos ...
+bundle config unset --local local.studio  # restore tag-pinned resolution
 ```
+
+Note: `bundle config local.studio` requires `branch:` in the Gemfile entry. If you frequently develop locally, change the Gemfile to `gem "studio", git: "...", branch: "main"` during dev and back to `tag:` before merging.
 
 ## Development Notes
 
