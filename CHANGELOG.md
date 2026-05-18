@@ -2,6 +2,20 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.0 (2026-05-17)
+
+### Changed (breaking)
+- **Gem renamed from `studio` to `studio-engine`.** Repo URL is now `github.com/amcritchie/studio-engine`. Consumers must update their `Gemfile`:
+  ```diff
+  - gem "studio", git: "https://github.com/amcritchie/studio.git", tag: "v0.3.1"
+  + gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git", tag: "v0.4.0"
+  ```
+- The Ruby `Studio` module name is **unchanged** — all call sites (`Studio.configure`, `Studio::ErrorHandling`, `Studio::ImageCache`, etc.) keep working without code changes.
+- Gem entry point at `lib/studio-engine.rb` (a thin `require_relative "studio"` shim) ensures `gem "studio-engine"` auto-requires correctly without a `require:` option in the Gemfile.
+
+### Added
+- `LICENSE`, gemspec `metadata` (homepage / source / bugs / changelog URIs), `spec.description`, `spec.required_ruby_version` — getting ready for RubyGems publishing.
+
 ## v0.3.1 (2026-05-17)
 
 ### Fixed

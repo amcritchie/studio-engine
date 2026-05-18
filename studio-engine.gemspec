@@ -1,0 +1,30 @@
+require_relative "lib/studio/version"
+
+Gem::Specification.new do |spec|
+  spec.name        = "studio-engine"
+  spec.version     = Studio::VERSION
+  spec.authors     = ["Alex McRitchie"]
+  spec.email       = ["alex@mcritchie.studio"]
+  spec.summary     = "Shared Rails engine providing auth, SSO, error logging, theming, and S3-backed image caching"
+  spec.description = "Studio Engine is a non-isolated Rails engine that ships an opinionated authentication + SSO contract, a polymorphic ErrorLog model, a Sluggable concern, a 7-role dynamic theme system with CSS-custom-property generation, and an S3-backed ImageCache. Used in production across the McRitchie Studio + Turf Monster apps."
+  spec.homepage    = "https://github.com/amcritchie/studio-engine"
+  spec.license     = "MIT"
+  spec.required_ruby_version = ">= 3.0"
+
+  spec.metadata = {
+    "homepage_uri"    => "https://github.com/amcritchie/studio-engine",
+    "source_code_uri" => "https://github.com/amcritchie/studio-engine",
+    "bug_tracker_uri" => "https://github.com/amcritchie/studio-engine/issues",
+    "changelog_uri"   => "https://github.com/amcritchie/studio-engine/blob/main/CHANGELOG.md"
+  }
+
+  spec.files = Dir["lib/**/*", "app/**/*", "config/**/*", "tailwind/**/*", "Gemfile", "studio-engine.gemspec", "README.md", "CHANGELOG.md", "LICENSE"]
+  spec.require_paths = ["lib"]
+
+  spec.add_dependency "rails", ">= 7.0"
+  spec.add_dependency "tailwindcss-rails", "~> 2.7"
+  spec.add_dependency "faker", ">= 2.0"
+  spec.add_dependency "solid_queue"
+  spec.add_dependency "aws-sdk-s3", "~> 1.218"
+  spec.add_dependency "mini_magick", "~> 5.0"
+end
