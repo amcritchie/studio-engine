@@ -33,7 +33,7 @@
 | Tool | Result |
 |------|--------|
 | `gitleaks` (full history, 141 commits) | ✅ No leaks found |
-| `bundle-audit` (engine's own Gemfile.lock) | ⚠️ nokogiri 1.18.10 has 1 HIGH + 2 MEDIUM CVEs. **Dev-env only** — nokogiri isn't a runtime dep of this gem; comes via Rails in consumer apps. Fix: `bundle update nokogiri` in this repo's `Gemfile.lock`. |
+| `bundle-audit` (engine's own Gemfile.lock) | ⚠️ nokogiri 1.18.10 has 1 HIGH + 2 MEDIUM CVEs. **Dev-env only** — nokogiri isn't a runtime dep of this gem; comes via Rails in consumer apps. Fix is `>= 1.19.3` but that requires Ruby 3.2+; ecosystem is on Ruby 3.1.7. **Tracked as known issue**; will resolve when ecosystem bumps to Ruby 3.2. See `Gemfile` comment block. Consumer apps on a fresh Ruby 3.2+ will resolve nokogiri 1.19.x via their own Rails — they are NOT downstream-affected by this. |
 
 ## Findings
 
