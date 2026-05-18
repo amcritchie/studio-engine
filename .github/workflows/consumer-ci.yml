@@ -1,0 +1,88 @@
+# Consumer CI — runs both consumer Rails apps' test suites against THIS engine
+# commit, so a PR/merge that breaks `mcritchie_studio` or `turf_monster` fails
+# here instead of silently after a `bundle update studio` on the consumer side.
+#
+# Operator setup (one-time, in studio repo Settings → Secrets and variables → Actions):
+#   CONSUMER_REPO_TOKEN — personal access token (classic) with `repo` scope,
+#                         so actions/checkout can clone the consumer repos if
+#                         they're private. Skip this secret if both consumer
+#                         repos are public.
+#
+# How it works:
+#   1. Checks out this engine PR/commit into ./studio
+#   2. Checks out the consumer repo into ./<consumer>
+#   3. Rewrites the consumer's Gemfile `studio` entry to `path: "../studio"`
+#      (matches the local engine HEAD, not whatever tag the consumer pinned)
+#   4. Runs the consumer's standard test suite
+#
+# Add a new consumer: append its repo name to the matrix.
+
+name: Consumer CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  consumer-tests:
+    name: ${{ matrix.consumer }} suite vs this engine
+    strategy:
+      fail-fast: false
+      matrix:
+        consumer: [mcritchie_studio, turf_monster]
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:14
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ['5432:5432']
+        options: --health-cmd="pg_isready" --health-interval=10s --health-timeout=5s --health-retries=3
+      redis:
+        image: redis
+        ports: ['6379:6379']
+        options: --health-cmd "redis-cli ping" --health-interval 10s --health-timeout 5s --health-retries 5
+
+    steps:
+      - name: Checkout engine
+        uses: actions/checkout@v4
+        with:
+          path: studio
+
+      - name: Checkout ${{ matrix.consumer }}
+        uses: actions/checkout@v4
+        with:
+          repository: amcritchie/${{ matrix.consumer }}
+          path: ${{ matrix.consumer }}
+          token: ${{ secrets.CONSUMER_REPO_TOKEN || github.token }}
+
+      - name: Install system packages
+        run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips imagemagick postgresql-client
+
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.1.7
+          working-directory: ${{ matrix.consumer }}
+
+      - name: Point consumer Gemfile at this engine commit
+        working-directory: ${{ matrix.consumer }}
+        run: |
+          # Replace the `gem "studio", git: "..."` line with a local path ref
+          sed -i.bak 's|^gem "studio".*|gem "studio", path: "../studio"|' Gemfile
+          rm -f Gemfile.lock  # force fresh resolution
+          bundle install --jobs 4 --retry 2
+
+      - name: Prepare test DB + run tests
+        working-directory: ${{ matrix.consumer }}
+        env:
+          RAILS_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432
+          REDIS_URL: redis://localhost:6379/0
+          RAILS_MASTER_KEY: ${{ secrets[format('{0}_RAILS_MASTER_KEY', matrix.consumer)] || '0' }}
+        run: |
+          bundle exec rails db:test:prepare
+          bundle exec rails test
