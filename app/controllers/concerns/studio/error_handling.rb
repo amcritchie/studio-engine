@@ -15,20 +15,7 @@ module Studio
 
     def current_user
       return @current_user if defined?(@current_user)
-
-      # Try app-specific session key
       @current_user = User.find_by(id: session[Studio.session_key])
-
-      # Legacy migration: old shared session[:user_id]
-      if @current_user.nil? && session[:user_id].present? && Studio.session_key != :user_id
-        @current_user = User.find_by(id: session[:user_id])
-        if @current_user
-          set_app_session(@current_user)  # Migrate to new key
-          session.delete(:user_id)        # Clean up old key
-        end
-      end
-
-      @current_user
     end
 
     def set_app_session(user)

@@ -161,7 +161,7 @@ McRitchie Studio is the central auth hub. Satellite apps (Turf Monster, future a
 - **`set_app_session(user)`** — sets `session[Studio.session_key]` (app-specific). Only updates `sso_*` fields if this app is the source (prevents overwriting hub data when satellite logs in).
 - **`set_sso_session(user)`** — alias for `set_app_session` (backwards compatibility)
 - **`clear_app_session`** — deletes this app's session key. Clears `sso_*` fields only if this app is the source.
-- **`current_user`** — looks up `session[Studio.session_key]`. Includes legacy migration for old `session[:user_id]` cookies.
+- **`current_user`** — looks up `session[Studio.session_key]`. (Legacy `session[:user_id]` fallback was removed in v0.4.2 per OPSEC-042 — cross-app fixation surface.)
 
 ### SSO Fields (stored in session by hub app)
 
