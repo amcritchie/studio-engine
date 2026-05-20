@@ -4,7 +4,7 @@ Shared Rails engine gem for McRitchie apps. Provides auth, error handling, and c
 
 - **GitHub**: https://github.com/amcritchie/studio-engine
 - **Gem name**: `studio-engine` (renamed from `studio` in v0.4.0 to free up the `studio` name on RubyGems and to make the role clearer)
-- **Version**: 0.4.0
+- **Version**: 0.4.3
 - **Consumed by**: McRitchie Studio (`mcritchie-studio/`), Turf Monster (`turf-monster/`), and Tax Studio (`tax-studio/`)
 - **Docs**: `docs/` directory — `NAVBAR_SETUP.md`, `GOOGLE_AUTH_SETUP.md`, `ENV_SETUP.md`, `NEW_APP_SETUP.md`
 
@@ -22,7 +22,7 @@ Shared Rails engine gem for McRitchie apps. Provides auth, error handling, and c
 
 ### Controllers
 - `ErrorLogsController` — public index (ILIKE search) + show (slug lookup)
-- `SessionsController` — email/password login, logout, `sso_login` (GET one-click SSO), `sso_continue` (POST from button). SSO user creation extracted into private `authenticate_sso_user!` method shared by both SSO actions.
+- `SessionsController` — email/password login, logout, `sso_login` (GET — redirects to login, OPSEC-016), `sso_continue` (POST — performs SSO login). SSO user creation lives in the private `authenticate_sso_user!` method, now called only from `sso_continue`.
 - `OmniauthCallbacksController` — Google OAuth callback + failure (overridden in Turf Monster for merge support)
 - `RegistrationsController` — signup with configurable params via `Studio.registration_params`
 - `ThemeSettingsController` — admin-only theme editor (edit/update/regenerate). Auth via `require_admin_for_theme`.
@@ -169,7 +169,7 @@ McRitchie Studio is the central auth hub. Satellite apps (Turf Monster, future a
 
 ### SSO Routes & Actions
 
-- **`GET /sso_login`** — one-click SSO entry point. Linked from hub app nav. Auto-logs in from `sso_*` data, redirects to login if unavailable.
+- **`GET /sso_login`** — SSO entry point linked from hub app nav. OPSEC-016: redirects to the satellite login page (no longer mutates the session on a GET); the user completes login via the CSRF-protected `POST /sso_continue` button shown there.
 - **`POST /sso_continue`** — form-based SSO from the "Continue as" button on login page.
 
 ### View Helpers

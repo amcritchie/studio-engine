@@ -15,15 +15,20 @@ class SessionsController < ApplicationController
     end
   end
 
-  # GET /sso_login — one-click SSO entry point (linked from hub app nav)
+  # GET /sso_login — one-click SSO entry point (linked from hub app nav).
+  #
+  # OPSEC-016: this previously called authenticate_sso_user! directly, mutating
+  # the session on a GET. GETs are not CSRF-covered and are prefetchable
+  # (browser prefetch, <img>, <link rel=prefetch>), so an XSS on any
+  # *.mcritchie.studio subdomain could write session[:sso_email] and a forged
+  # GET /sso_login would silently start a session as that user. It now only
+  # redirects to the login page — the session mutation happens exclusively via
+  # the CSRF-protected POST /sso_continue ("Continue as …" button rendered
+  # there when sso_user_available?).
   def sso_login
     return redirect_to root_path if logged_in?
-    return redirect_to login_path unless sso_user_available?
 
-    authenticate_sso_user!
-  rescue StandardError => e
-    create_error_log(e)
-    redirect_to login_path, alert: "Could not continue session. Please log in."
+    redirect_to login_path
   end
 
   # POST /sso_continue — form-based SSO from login page button
