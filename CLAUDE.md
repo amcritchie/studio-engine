@@ -4,7 +4,7 @@ Shared Rails engine gem for McRitchie apps. Provides auth, error handling, and c
 
 - **GitHub**: https://github.com/amcritchie/studio-engine
 - **Gem name**: `studio-engine` (renamed from `studio` in v0.4.0 to free up the `studio` name on RubyGems and to make the role clearer)
-- **Version**: 0.4.3
+- **Version**: 0.4.4
 - **Consumed by**: McRitchie Studio (`mcritchie-studio/`), Turf Monster (`turf-monster/`), and Tax Studio (`tax-studio/`)
 - **Docs**: `docs/` directory — `NAVBAR_SETUP.md`, `GOOGLE_AUTH_SETUP.md`, `ENV_SETUP.md`, `NEW_APP_SETUP.md`
 

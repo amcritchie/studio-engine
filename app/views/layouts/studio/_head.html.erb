@@ -73,6 +73,38 @@
   });
 </script>
 
+<style>
+  /* studio-engine: a sticky navbar that shrinks on scroll changes layout
+     above the fold — Chrome/Firefox scroll-anchoring then compensates by
+     moving scrollY, which re-crosses the collapse threshold and bounces.
+     Disabling anchoring document-wide stops scrollY being dragged by the
+     navbar resize. */
+  body { overflow-anchor: none; }
+</style>
+<script>
+  // studio-engine: publish the sticky header's live height as the --nav-h
+  // CSS variable so fixed/sticky elements below the navbar can position off
+  // it (e.g. top: var(--nav-h)) without hardcoded px. Tracks every resize,
+  // including scroll-collapse animations, and re-attaches after Turbo nav.
+  (function () {
+    if (!window.ResizeObserver) return;
+    var ro = null;
+    function publish(header) {
+      document.documentElement.style.setProperty('--nav-h', header.offsetHeight + 'px');
+    }
+    function attach() {
+      var header = document.querySelector('header');
+      if (!header) return;
+      if (ro) ro.disconnect();
+      ro = new ResizeObserver(function () { publish(header); });
+      ro.observe(header);
+      publish(header);
+    }
+    document.addEventListener('DOMContentLoaded', attach);
+    document.addEventListener('turbo:load', attach);
+  })();
+</script>
+
 <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
 <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
 <%= javascript_importmap_tags %>
