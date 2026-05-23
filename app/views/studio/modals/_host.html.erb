@@ -1,0 +1,156 @@
+<%#
+  Modal host — single shared shell for any modal that opens through
+  Alpine.store('modals'). Owns the backdrop, scroll lock (via
+  .modal-open on <body>), escape key, click-outside, transitions,
+  and ARIA dialog role.
+
+  Bundles together (toast partial precedent):
+    • body.modal-open scroll-lock CSS
+    • bfcache + Turbo Drive snapshot cleanup
+    • Alpine.store('modals') registration (stack-based API)
+    • window.StudioModals.holdAtLeast(ms) helper for min-visible-time
+    • The host shell markup (backdrop, card chrome, transitions, ARIA)
+
+  Consumer renders ONCE in the application layout and passes a block
+  that registers content partials by modal id:
+
+    <%%= render "studio/modals/host" do %%>
+      <template x-if="$store.modals.current().id === 'auth'">
+        <%%= render "modals/auth" %%>
+      </template>
+      <template x-if="$store.modals.current().id === 'checkEmail'">
+        <%%= render "modals/check_email" %%>
+      </template>
+    <%% end %%>
+
+  Modal CONTENT partials live in the consumer app (each app's auth /
+  checkout / tx / etc. is product-specific). The reusable content
+  BLOCKS live next to this partial in studio/modals/blocks/.
+
+  API (window.StudioModals + Alpine store):
+    $store.modals.open(id, props = {}, opts = {})
+      opts.replace: true → swap top of stack (no stack flicker)
+    $store.modals.close()         pop top
+    $store.modals.closeAll()
+    $store.modals.isOpen(id)
+    $store.modals.current()
+
+    StudioModals.holdAtLeast(ms)  returns { then(cb) }
+      Stamps mount time, delays cb so a fast operation can't flash
+      past the loading state. Mirrors the _navSpinnerMinMs pattern.
+
+  z-[120] sits above the navbar (z-[110]) and above toasts (z-60).
+%>
+<style>
+  /* Scroll lock applied by $store.modals._sync() when the stack is non-empty.
+     Combined with the fixed backdrop on the host below, this keeps the
+     page beneath any modal from scrolling on wheel / touch / spacebar. */
+  body.modal-open { overflow: hidden; }
+</style>
+
+<script>
+  (function() {
+    // === StudioModals helpers ===========================================
+    //
+    // holdAtLeast(ms) — pair with the _processing_card block. Stamp the
+    // moment a loading view becomes visible, then await the minimum
+    // before swapping to success so the spinner doesn't flash past the
+    // user when the operation finishes fast.
+    window.StudioModals = window.StudioModals || {};
+    window.StudioModals.holdAtLeast = function(minMs) {
+      var startedAt = Date.now();
+      return {
+        then: function(callback) {
+          var remaining = Math.max(0, minMs - (Date.now() - startedAt));
+          if (remaining === 0) { callback(); return; }
+          setTimeout(callback, remaining);
+        }
+      };
+    };
+
+    // === Alpine.store('modals') — the stack ============================
+    //
+    // Idempotent registration (return early if already registered) so
+    // consumer apps can include the host more than once without
+    // double-init.
+    document.addEventListener('alpine:init', function() {
+      if (Alpine.store('modals')) return;
+      Alpine.store('modals', {
+        stack: [],
+        open: function(id, props, opts) {
+          props = props || {};
+          opts  = opts  || {};
+          if (opts.replace && this.stack.length > 0) {
+            this.stack[this.stack.length - 1] = { id: id, props: props };
+          } else {
+            this.stack.push({ id: id, props: props });
+          }
+          this._sync();
+        },
+        close: function() {
+          this.stack.pop();
+          this._sync();
+        },
+        closeAll: function() {
+          this.stack = [];
+          this._sync();
+        },
+        isOpen: function(id) {
+          for (var i = 0; i < this.stack.length; i++) {
+            if (this.stack[i].id === id) return true;
+          }
+          return false;
+        },
+        current: function() {
+          return this.stack.length ? this.stack[this.stack.length - 1] : null;
+        },
+        _sync: function() {
+          if (this.stack.length) {
+            document.body.classList.add('modal-open');
+          } else {
+            document.body.classList.remove('modal-open');
+          }
+        }
+      });
+    });
+
+    // === bfcache + Turbo snapshot cleanup ==============================
+    //
+    // Without this, a user who lands on a celebratory modal and then
+    // navigates away (or hits the browser's bfcache on back) sees the
+    // modal again on their next visit. Clear the stack on both signals.
+    function closeAllModals() {
+      if (window.Alpine && Alpine.store) {
+        var m = Alpine.store('modals');
+        if (m && typeof m.closeAll === 'function') m.closeAll();
+      }
+    }
+    window.addEventListener('pageshow', function(e) { if (e.persisted) closeAllModals(); });
+    document.addEventListener('turbo:before-cache', closeAllModals);
+  })();
+</script>
+
+<template x-if="$store.modals.current()">
+  <div class="fixed inset-0 z-[120] flex items-center justify-center p-4"
+       style="background:rgba(0,0,0,0.6)"
+       role="dialog"
+       aria-modal="true"
+       @keydown.escape.window="$store.modals.close()"
+       @click.self="$store.modals.close()"
+       x-transition:enter="transition ease-out duration-200"
+       x-transition:enter-start="opacity-0"
+       x-transition:enter-end="opacity-100"
+       x-transition:leave="transition ease-in duration-150"
+       x-transition:leave-start="opacity-100"
+       x-transition:leave-end="opacity-0">
+    <div class="bg-surface rounded-xl border border-subtle shadow-2xl p-6 max-w-sm w-full"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0 scale-95"
+         x-transition:enter-end="opacity-100 scale-100">
+      <%# Consumer-provided content registrations. Each block typically
+          contains a <template x-if="$store.modals.current().id === 'X'">
+          render "modals/X" </template>. %>
+      <%= yield if block_given? %>
+    </div>
+  </div>
+</template>
