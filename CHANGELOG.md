@@ -2,6 +2,18 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.6 (2026-05-23)
+
+Small follow-up to 0.4.5 — modal dismissibility opt-out.
+
+### Added
+- **`props.dismissible: false`** on a modal's props now suppresses escape-key + click-outside close. Required for flows that mustn't be interrupted mid-step — on-chain TX while a Phantom signature is pending, multi-stage withdrawals, etc. Defaults to true (existing behavior). Set per-modal:
+  ```js
+  $store.modals.open('onchain-tx', { state: 'processing', dismissible: false });
+  // ...later, when the TX confirms:
+  $store.modals.current().props.dismissible = true;  // user can now close
+  ```
+
 ## v0.4.5 (2026-05-23)
 
 Modal infrastructure — same shape as the toast system from v0.4.0. Apps render `studio/modals/host` once, then open through `Alpine.store('modals')` and compose the shared content blocks. No migration required for v0.4.4 consumers.

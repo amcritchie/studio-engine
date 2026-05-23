@@ -6,12 +6,17 @@
   registers "did anything happen?" instead of "ok, processing →
   success".
 
-  Locals:
-    title:         required string ("Confirming your purchase…", etc.)
-    message:       optional supporting text
+  Locals — pass static strings OR `_key` variants for Alpine-driven
+  text that updates as state mutates (e.g. live store reads):
+    title:         static string title
+    title_key:     Alpine expression for the title (rendered via x-text)
+    message:       static string message (optional)
+    message_key:   Alpine expression for the message
     size:          spinner size — 'sm', 'md' (default), 'lg'
     color:         color token for the spinner — 'primary' (default),
                    'success', 'warning'
+
+  One of `title` or `title_key` is required.
 %>
 <%
   size   = local_assigns[:size]  || 'md'
@@ -25,8 +30,14 @@
 %>
 <div class="text-center py-6">
   <div class="mx-auto <%= spinner_class %> rounded-full border-<%= color %>/30 border-t-<%= color %> animate-spin mb-5"></div>
-  <p class="text-base font-bold text-heading mb-1"><%= title %></p>
-  <% if local_assigns[:message] %>
+  <% if local_assigns[:title_key] %>
+    <p class="text-base font-bold text-heading mb-1" x-text="<%= title_key %>"></p>
+  <% elsif local_assigns[:title] %>
+    <p class="text-base font-bold text-heading mb-1"><%= title %></p>
+  <% end %>
+  <% if local_assigns[:message_key] %>
+    <p class="text-xs text-secondary" x-text="<%= message_key %>"></p>
+  <% elsif local_assigns[:message] %>
     <p class="text-xs text-secondary"><%= message %></p>
   <% end %>
 </div>

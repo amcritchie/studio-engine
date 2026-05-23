@@ -131,12 +131,16 @@
 </script>
 
 <template x-if="$store.modals.current()">
+  <%# A modal can opt out of escape + click-outside dismissal by setting
+      `dismissible: false` on its props (e.g. processing an on-chain tx
+      where an accidental click would orphan a signed but un-confirmed
+      transaction). Defaults to dismissible. %>
   <div class="fixed inset-0 z-[120] flex items-center justify-center p-4"
        style="background:rgba(0,0,0,0.6)"
        role="dialog"
        aria-modal="true"
-       @keydown.escape.window="$store.modals.close()"
-       @click.self="$store.modals.close()"
+       @keydown.escape.window="$store.modals.current() && $store.modals.current().props.dismissible !== false && $store.modals.close()"
+       @click.self="$store.modals.current() && $store.modals.current().props.dismissible !== false && $store.modals.close()"
        x-transition:enter="transition ease-out duration-200"
        x-transition:enter-start="opacity-0"
        x-transition:enter-end="opacity-100"
