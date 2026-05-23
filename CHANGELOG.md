@@ -2,6 +2,13 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.7 (2026-05-23)
+
+Bugfix — modal host doc-comment was leaking into rendered pages.
+
+### Fixed
+- **`studio/modals/host` comment block terminated early.** The leading `<%# %>` comment in `_host.html.erb` contained a worked example of the consumer's render-block syntax (`<%%= render ... %%>`). ERB scans for the first `%>` sequence to close the comment, and `%%>` ends in `%>`, so the comment terminated mid-escape — leaving the example markup AND the prose after it as literal output at the bottom of every page that rendered the host. Now any docblock with ERB escapes is removed; the consumer example lives in the gem's README / CHANGELOG instead. No API change.
+
 ## v0.4.6 (2026-05-23)
 
 Small follow-up to 0.4.5 — modal dismissibility opt-out.
