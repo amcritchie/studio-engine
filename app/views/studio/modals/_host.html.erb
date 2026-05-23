@@ -1,37 +1,12 @@
 <%#
-  Modal host — single shared shell for any modal that opens through
+  Modal host. Single shared shell for any modal that opens through
   Alpine.store('modals'). Owns the backdrop, scroll lock (via
-  .modal-open on body), escape key, click-outside, transitions, and
-  ARIA dialog role. Bundles the scroll-lock CSS, bfcache + Turbo
+  modal-open on body), escape key, click-outside, transitions, and
+  ARIA dialog role. Bundles the scroll-lock CSS, bfcache and Turbo
   Drive snapshot cleanup, store registration, and the
-  window.StudioModals.holdAtLeast(ms) helper.
-
-  Render ONCE from the application layout, passing a block that
-  registers content partials by modal id (see this gem's README /
-  CHANGELOG for the consumer-side example — kept out of this comment
-  on purpose because ERB <%# %> terminates at the first %> sequence,
-  so embedded <%%= %%> escapes would leak the rest of the comment
-  into the page output).
-
-  Modal CONTENT partials live in the consumer app (each app's auth /
-  checkout / tx / etc. is product-specific). The reusable content
-  BLOCKS live next to this partial in studio/modals/blocks/.
-
-  API surface (window.StudioModals + the Alpine 'modals' store):
-
-    $store.modals.open(id, props, opts)
-      opts.replace true swaps top of stack (no stack flicker)
-      props.dismissible false suppresses escape + click-outside close
-    $store.modals.close()       — pop top
-    $store.modals.closeAll()
-    $store.modals.isOpen(id)
-    $store.modals.current()
-
-    StudioModals.holdAtLeast(ms) — returns { then(cb) }. Stamps
-    mount time, delays cb so a fast operation can't flash past the
-    loading state. Mirrors the _navSpinnerMinMs pattern.
-
-  z-[120] sits above the navbar (z-[110]) and above toasts (z-60).
+  window.StudioModals.holdAtLeast(ms) helper. See the gem README for
+  the consumer integration example and API reference; documentation
+  intentionally kept brief here.
 %>
 <style>
   /* Scroll lock applied by $store.modals._sync() when the stack is non-empty.

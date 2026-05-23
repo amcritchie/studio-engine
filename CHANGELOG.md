@@ -2,12 +2,19 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.8 (2026-05-23)
+
+Bugfix follow-up to v0.4.7. The v0.4.7 fix removed the ERB-escape example from the doc comment, but the same comment still referenced the bug it had just fixed using literal ERB-tag characters (the words "ERB <%# %> terminates at the first %> sequence" sit inside an ERB comment that uses `%>` as its terminator — recursive footgun). The first inline `%>` ended the outer comment and the rest leaked again.
+
+### Fixed
+- **`studio/modals/host` comment leak (v0.4.6 + v0.4.7).** Rewrote the doc comment to contain zero `%` characters; ERB now sees the entire block as a single comment. No API change.
+
 ## v0.4.7 (2026-05-23)
 
 Bugfix — modal host doc-comment was leaking into rendered pages.
 
 ### Fixed
-- **`studio/modals/host` comment block terminated early.** The leading `<%# %>` comment in `_host.html.erb` contained a worked example of the consumer's render-block syntax (`<%%= render ... %%>`). ERB scans for the first `%>` sequence to close the comment, and `%%>` ends in `%>`, so the comment terminated mid-escape — leaving the example markup AND the prose after it as literal output at the bottom of every page that rendered the host. Now any docblock with ERB escapes is removed; the consumer example lives in the gem's README / CHANGELOG instead. No API change.
+- **`studio/modals/host` comment block terminated early.** The leading comment in `_host.html.erb` contained a worked example of the consumer render-block syntax using literal ERB escape sequences. ERB scans for the first tag-close to close the comment, and the escape sequences end in one — so the comment terminated mid-escape, leaving the rest as literal output at the bottom of every page. (See v0.4.8 — this v0.4.7 fix was itself incomplete.)
 
 ## v0.4.6 (2026-05-23)
 
