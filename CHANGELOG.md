@@ -2,6 +2,20 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.9 (2026-05-23)
+
+Modal success_card upgrades — canonical "celebration" look for any modal that needs an Entry / Action / Payment confirmed card. All options additive; existing callers unaffected.
+
+### Added
+- **`_success_card` — `large_title:`** boolean. Bumps the headline from `text-lg` to `text-3xl` (the celebration look).
+- **`_success_card` — `title_key:` / `message_key:`** Alpine-expression locals for live-driven headline + subtitle. Lets a card track a store as labels mutate without re-mounting (paired with the same option on `_processing_card` in v0.4.6).
+- **`_success_card` — `tx_solana:`** boolean. Upgrades the tx-signature explorer link from the plain underlined-hash style to a boxed pill with the Solana brand mark (gradient SVG, three diagonal bars) on the left and a launch arrow on the right. Same `tx_signature_key` Alpine expression drives both variants.
+- **`_success_card` — `cta_drain:`** boolean. When paired with `auto_redirect_url_key`, the countdown drains as a translucent overlay on the CTA button itself — no separate progress bar / "Redirecting in Xs…" text. The celebration look. Uses the new `@keyframes studio-modal-drain` defined in the host's style block.
+- **`_success_card` — yield block.** Callers can pass an inline block; the card renders it below the CTA. Used by turf-monster's onchain-tx modal to slot in the seeds-bar + level-up celebration without forking the partial.
+
+### Migration
+None required. Apps that don't set the new options keep the existing default look.
+
 ## v0.4.8 (2026-05-23)
 
 Bugfix follow-up to v0.4.7. The v0.4.7 fix removed the ERB-escape example from the doc comment, but the same comment still referenced the bug it had just fixed using literal ERB-tag characters (the words "ERB <%# %> terminates at the first %> sequence" sit inside an ERB comment that uses `%>` as its terminator — recursive footgun). The first inline `%>` ended the outer comment and the rest leaked again.

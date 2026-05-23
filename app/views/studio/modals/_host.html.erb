@@ -13,6 +13,14 @@
      Combined with the fixed backdrop on the host below, this keeps the
      page beneath any modal from scrolling on wheel / touch / spacebar. */
   body.modal-open { overflow: hidden; }
+
+  /* Drain-bar keyframe used by studio/modals/blocks/_success_card when
+     cta_drain is set — the CTA button hosts a translucent overlay that
+     shrinks from full to empty over the auto-redirect duration. */
+  @keyframes studio-modal-drain {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+  }
 </style>
 
 <script>
