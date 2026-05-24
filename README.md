@@ -7,13 +7,13 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 ## Installation
 
 ```ruby
-# Gemfile — pin to a tag (recommended; see Releases section)
-gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git", tag: "v0.3.0"
+# Gemfile — install from RubyGems (recommended)
+gem "studio-engine", "~> 0.4.0"
 ```
 
-Then `bundle install`. The current release is **v0.3.0**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.4.10**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
-> Pinning to a tag (not `main`) is now the recommended pattern. Consumer apps that track `main` will silently inherit any engine merge — bad when one merge breaks several apps at once.
+> Published to RubyGems as of v0.4.0 (2026-05-17). Earlier consumers used a `git:` ref pinned to a tag; that pattern is preserved here for reference but new installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`, `tax-studio`) already use.
 
 ## What It Provides
 
