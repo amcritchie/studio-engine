@@ -2,6 +2,19 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.11 (2026-05-24)
+
+Preserves non-dismissible modals (e.g. pending on-chain TX) across bfcache restore and Turbo snapshot caching. Previously, the modal host's cleanup hooks called `closeAll()` on both `pageshow.persisted` and `turbo:before-cache`, which silently dropped any `dismissible: false` modal — including the processing card a still-in-flight JS promise was expecting to resolve against. The promise's `solanaModal.success()` then no-op'd against an empty stack and the user saw nothing despite their TX landing on-chain.
+
+### Added
+- **`Alpine.store('modals').closeAllDismissible()`** — drops every modal in the stack whose `props.dismissible !== false`, leaves locked modals in place.
+
+### Changed
+- **bfcache + Turbo snapshot cleanup** now calls `closeAllDismissible()` instead of `closeAll()`. Celebratory modals still clear on return; pending-TX modals survive.
+
+### Migration
+None required — celebratory modal behavior is unchanged. Consumers relying on `dismissible: false` (turf-monster's `onchain-tx` modal) gain crash-recovery for free.
+
 ## v0.4.10 (2026-05-23)
 
 Lets consumer apps override toast z-indexes without `!important`. Previously, `#toast-container` set `z-index: 60` via an inline `style=` attribute, which forced any consumer override to use `!important`. Same source-order problem for `.toast-page-blur` (z-index in the inline `<style>` block here loaded after the consumer's `application.tailwind.css`). Both now read from CSS custom properties with the previous values as fallback defaults.
