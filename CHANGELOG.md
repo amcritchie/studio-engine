@@ -2,6 +2,23 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.10 (2026-05-23)
+
+Lets consumer apps override toast z-indexes without `!important`. Previously, `#toast-container` set `z-index: 60` via an inline `style=` attribute, which forced any consumer override to use `!important`. Same source-order problem for `.toast-page-blur` (z-index in the inline `<style>` block here loaded after the consumer's `application.tailwind.css`). Both now read from CSS custom properties with the previous values as fallback defaults.
+
+### Changed
+- **`#toast-container`** z-index moved from inline `style=` to a CSS rule reading `var(--studio-toast-z, 60)`.
+- **`.toast-page-blur`** z-index now reads `var(--studio-toast-blur-z, 55)`.
+
+### Migration
+None required — defaults preserve existing behavior. Apps that need higher z-indexes (e.g. to stack above a `z-50`/`z-110` sticky navbar) can now set the variables on `:root` in their stylesheet and drop their `!important` workaround:
+```css
+:root {
+  --studio-toast-z: 120;
+  --studio-toast-blur-z: 115;
+}
+```
+
 ## v0.4.9 (2026-05-23)
 
 Modal success_card upgrades — canonical "celebration" look for any modal that needs an Entry / Action / Payment confirmed card. All options additive; existing callers unaffected.

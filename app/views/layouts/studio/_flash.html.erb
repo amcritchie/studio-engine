@@ -11,6 +11,11 @@
 <%#   } })) %>
 
 <style>
+  /* Z-indexes are CSS-var-driven so consumer apps can override without
+     !important. The defaults (60 / 55) sit just above typical sticky-nav
+     baselines (50). Apps with higher navbars set --studio-toast-z and
+     --studio-toast-blur-z in :root. */
+  #toast-container { z-index: var(--studio-toast-z, 60); }
   .toast-shadow-all {
     box-shadow: 0 0 30px rgba(0,0,0,0.4), 0 0 10px rgba(0,0,0,0.2);
   }
@@ -57,7 +62,7 @@
     mask-image: radial-gradient(ellipse 70% 80% at 50% 0%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%);
     -webkit-mask-image: radial-gradient(ellipse 70% 80% at 50% 0%, rgba(0,0,0,0.7) 0%, rgba(0,0,0,0.3) 40%, rgba(0,0,0,0) 100%);
     pointer-events: none;
-    z-index: 55;
+    z-index: var(--studio-toast-blur-z, 55);
     transition: opacity 0.5s ease;
     background: rgba(255, 255, 255, 0.15);
   }
@@ -78,7 +83,7 @@
 
   <div id="toast-container"
        class="fixed top-0 left-1/2 flex flex-col items-center pointer-events-none"
-       style="z-index: 60; transform: translateX(-50%); padding: 1rem; width: 100%; max-width: 30rem;">
+       style="transform: translateX(-50%); padding: 1rem; width: 100%; max-width: 30rem;">
 
   <template x-for="(toast, index) in toasts" :key="toast.id">
     <div :style="toastStyle(index)"
