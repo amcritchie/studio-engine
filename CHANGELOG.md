@@ -2,6 +2,31 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.5.0 (2026-06-02)
+
+Promotes the **shared authentication core** out of Turf Monster into the engine so every Studio app runs one passwordless-first auth flow. This release is the **backend** half (services, POROs, concern helpers, base controllers, mailer); the shared wallet JS + Connect-Wallet modal land with the first consumer wiring. Turf Monster is **not** on this version yet — it stays on 0.4.x until its incremental migration.
+
+### Added
+- **`Studio.auth_methods`** config (default `%i[magic_link google wallet]`; `:password` opt-in) + `Studio.auth_method?(m)`. Login/signup surfaces render a field/button per enabled method. `:password` also re-arms the `User#authenticate` contract check.
+- **`Studio.magic_link_ttl`** (15 min), **`Studio.magic_link_token_name`** (`"magic_link_v1"`), **`Studio.mailer_from`** config.
+- **`SessionContext`** PORO — canonical guest/web2/web3 viewer state (`mode`, `to_h` camelCase for `Alpine.store('session')`). Wallet predicates are `respond_to?`-guarded so a wallet-less app is safe.
+- **`Current`** baseline (`attribute :user`) — apps needing more request-scoped state override the file.
+- **`MagicLink`** service — signed, single-use (jti in `Rails.cache`), URL-safe token; token name/TTL from config.
+- **`GoogleOauthValidator`** — server-side `tokeninfo` re-check (audience / email_verified / expiry).
+- **`Solana::SessionAuth`** concern — Rails-session adapter over `solana-studio`'s `Solana::AuthVerifier` (nonce delete-before-verify + host binding). solana-studio is host-provided; only loaded when wallet sign-in is on.
+- **Base controllers** (generic; apps override for richer flows): `MagicLinksController` (create-or-login), `SolanaSessionsController` (nonce/verify), and an upgraded `OmniauthCallbacksController` (now runs `GoogleOauthValidator`).
+- **`UserMailer#magic_link`** + `ApplicationMailer` (proc `from:` ← `Studio.mailer_from`) + app-name-aware templates.
+- **Routes**: `Studio.routes` now draws `magic_link_request`/`magic_link` (when `:magic_link`) and `solana_nonce`/`solana_verify` (when `:wallet`), gated by `auth_method?`.
+
+### Concern (`Studio::ErrorHandling`)
+- `set_app_session` now binds a rotating `session[:session_token]` (OPSEC-045, guarded) and resets the `:onchain` flag; `clear_app_session` wipes both.
+- `require_authentication` is now **format-aware** (HTML→redirect, JSON/Turbo→401, was a blind redirect that 406'd AJAX — OPSEC-046).
+- New helpers: `set_current_context`, `verify_session_token` (guarded), `onchain_session?`, `wallet_context`, `client_session_payload` (identity-only baseline; apps override to merge balances).
+
+### Breaking / Migration
+- **`User.from_omniauth` contract is now `(auth, email_verified:)`** — the engine `OmniauthCallbacksController` passes the `GoogleOauthValidator` result. Consumers using the engine callback must update their `from_omniauth` to accept the kwarg.
+- Consumers enabling `:magic_link` / `:wallet` must provide the User class methods the base controllers call (`User.find_by(email:)`, `User.from_solana_wallet(addr)`), the relevant columns (`email`, `email_verified_at`, `solana_address`, optional `session_token`), and `default_url_options` for mailer link generation.
+
 ## v0.4.13 (2026-06-02)
 
 Promotes `components/_avatar_cropper` onto the shared crop-photo modal — completing the image-upload extraction started in v0.4.12. The avatar cropper is the **deferred-form-field** counterpart to `imageUploadHost`: it stages a cropped PNG on a hidden file input + shows a round preview, and the enclosing form (signup / profile edit) submits later (vs. `imageUploadHost`, which submits immediately).
