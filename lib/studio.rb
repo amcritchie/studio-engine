@@ -29,6 +29,12 @@ module Studio
   mattr_accessor :magic_link_ttl,        default: 15.minutes
   mattr_accessor :magic_link_token_name, default: "magic_link_v1"
 
+  # Whether Studio.routes draws the magic_link + solana wallet routes. An app that
+  # already defines its own auth routes (e.g. turf-monster, which has battle-tested
+  # magic_link/solana routes + extras) sets this false to avoid duplicate route
+  # NAMES at boot, keeping its own routes intact. New consumers leave it true.
+  mattr_accessor :draw_auth_routes, default: true
+
   # Default From: for engine-sent mail (magic links). Apps set this to their
   # verified Resend sending address in config/initializers/studio.rb.
   mattr_accessor :mailer_from, default: nil
@@ -154,7 +160,7 @@ module Studio
       # to request a link) + magic_link_path(token) / magic_link_url(token:)
       # (the emailed consume link). The token is a URL-safe MessageVerifier blob
       # but the constraint guards against a stray "." segment.
-      if Studio.auth_method?(:magic_link)
+      if Studio.draw_auth_routes && Studio.auth_method?(:magic_link)
         post "magic_link",        to: "magic_links#create",  as: :magic_link_request
         get  "magic_link/:token", to: "magic_links#consume", as: :magic_link,
              constraints: { token: %r{[^/]+} }
@@ -164,7 +170,7 @@ module Studio
       # The browser posts to these literal paths from the shared Connect-Wallet
       # flow; app-specific surfaces (mobile deep-link callback, account-linking,
       # OAuth popup) stay in the consuming app's routes.
-      if Studio.auth_method?(:wallet)
+      if Studio.draw_auth_routes && Studio.auth_method?(:wallet)
         get  "auth/solana/nonce",  to: "solana_sessions#nonce",  as: :solana_nonce
         post "auth/solana/verify", to: "solana_sessions#verify", as: :solana_verify
       end

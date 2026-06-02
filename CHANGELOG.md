@@ -2,6 +2,16 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.5.1 (2026-06-02)
+
+Smooths the turf-monster adoption of the v0.5.0 auth core (turf already ships its own battle-tested auth routes).
+
+### Added
+- **`Studio.draw_auth_routes`** (default `true`) — gates the `magic_link` + `solana` route block in `Studio.routes`. An app that already defines those routes (turf-monster) sets it `false` to keep its own routes and avoid a duplicate route-NAME boot crash.
+
+### Changed
+- **`MagicLink`** re-exposes `TOKEN_KEY` + `TTL` constants (equal to the config defaults) for back-compat with consumer code/tests that reference them; behavior is still driven by `Studio.magic_link_token_name` / `Studio.magic_link_ttl`.
+
 ## v0.5.0 (2026-06-02)
 
 Promotes the **shared authentication core** out of Turf Monster into the engine so every Studio app runs one passwordless-first auth flow. This release is the **backend** half (services, POROs, concern helpers, base controllers, mailer); the shared wallet JS + Connect-Wallet modal land with the first consumer wiring. Turf Monster is **not** on this version yet — it stays on 0.4.x until its incremental migration.

@@ -27,8 +27,14 @@ module Studio
       # verify_session_token filter compares it to user.session_token on every
       # request, so a server-side rotation (email change, "log out everywhere")
       # invalidates stolen sessions. Guarded for consumers whose User has no
-      # session_token column.
-      session[:session_token] = user.session_token if user.respond_to?(:session_token)
+      # session_token column. Backfills a blank token (legacy rows / fixtures
+      # predate the column) so they aren't force-logged-out on the next request.
+      if user.respond_to?(:session_token)
+        if user.session_token.blank? && user.respond_to?(:update_column)
+          user.update_column(:session_token, SecureRandom.hex(32))
+        end
+        session[:session_token] = user.session_token
+      end
 
       # The on-chain-session flag is a Phantom-wallet-signature privilege.
       # Reset it on every login so a stale flag from an earlier wallet session

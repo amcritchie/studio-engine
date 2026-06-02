@@ -21,6 +21,13 @@
 #
 # Lifted into studio-engine (was turf-monster app/services/magic_link.rb).
 class MagicLink
+  # Back-compat defaults. Behavior is driven by the `token_name` / `ttl` methods
+  # (which read Studio config); these constants remain so existing consumer code
+  # /tests referencing MagicLink::TTL keep working, and they equal the config
+  # defaults.
+  TOKEN_KEY = "magic_link_v1"
+  TTL       = 15.minutes
+
   class InvalidToken < StandardError; end
 
   Result = Struct.new(:email, :return_to, keyword_init: true)
