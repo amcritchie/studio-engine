@@ -1,0 +1,232 @@
+<%#
+  Image-upload client behavior for the crop-photo + saving modals.
+
+  Ships three window factories inline (engine convention — see _head /
+  _flash) so they're defined before Alpine processes any x-data that
+  references them:
+
+    cropPhotoModal()          x-data for studio/modals/_crop_photo
+    submitFormWithProgress()  loading card + toast around a Turbo submit
+    imageUploadHost()         host for crop-then-immediate-save uploaders
+                              (x-data in the consumer's upload views)
+
+  Rendered once by the modal host. cropper.js itself loads via
+  studio/_cropper_assets on the pages that can open the cropper.
+%>
+<script>
+  // === window.cropPhotoModal — x-data for studio/modals/_crop_photo =========
+  //
+  // The modal hands the cropped Blob back to its opener via the
+  // 'crop-photo-confirmed' window event — the opener's host owns the upload.
+  // The image gets IN two ways:
+  //   * imageUrl prop — the opener already picked a file and passes the data
+  //     URL (avatar uploader / avatar_cropper); the modal jumps to the cropper.
+  //   * no imageUrl — the modal itself is the picker (click/drag-drop empty
+  //     state), then crops (e.g. a banner editor's open()).
+  function cropPhotoModal(opts) {
+    opts = opts || {};
+    return {
+      cropper: null,
+      imageUrl: null,
+      fromParent: false,
+      dragging: false,
+      error: null,
+      // Configurable crop output. Defaults = avatar (square 256px, transparent).
+      // Callers override per-use via the modal props, e.g.
+      //   Alpine.store('modals').open('crop-photo',
+      //     { imageUrl, aspectRatio: 3, maxWidth: 900, maxHeight: 300 })
+      aspectRatio: 1,
+      maxWidth: 256,
+      maxHeight: 256,
+      transparent: true,
+      autoCropArea: 0.9,
+      // dispatch: keep the modal open after confirm so the opener's host can run
+      // its own processing -> success flow (it replaces the modal). When false
+      // (fromParent, e.g. avatar_cropper) the modal closes itself after confirm.
+      dispatch: false,
+
+      init() {
+        var current = this.$store.modals.current();
+        var props = (current && current.props) || {};
+        if (props.aspectRatio) this.aspectRatio = props.aspectRatio;
+        if (props.maxWidth) this.maxWidth = props.maxWidth;
+        if (props.maxHeight) this.maxHeight = props.maxHeight;
+        if (typeof props.transparent === "boolean") this.transparent = props.transparent;
+        if (props.dispatch) this.dispatch = true;
+        if (props.autoCropArea) this.autoCropArea = props.autoCropArea;
+        if (props.imageUrl) {
+          this.fromParent = true;
+          this.imageUrl = props.imageUrl;
+          this.mountCropper();
+        }
+      },
+
+      destroy() {
+        if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+      },
+
+      mountCropper() {
+        var self = this;
+        this.$nextTick(function () {
+          if (typeof Cropper === "undefined") return;
+          if (self.cropper) { self.cropper.destroy(); self.cropper = null; }
+          self.cropper = new Cropper(self.$refs.cropImage, {
+            aspectRatio: self.aspectRatio, viewMode: 1, dragMode: "move",
+            autoCropArea: self.autoCropArea, cropBoxResizable: true,
+            cropBoxMovable: true, background: false, guides: true
+          });
+          // Cropping in progress — lock the modal (no click-outside / escape) so
+          // an accidental click doesn't discard the crop. Cancel still works.
+          var cur = self.$store.modals.current();
+          if (cur && cur.props) cur.props.dismissible = false;
+        });
+      },
+
+      readFile(file) {
+        if (!file) return;
+        if (!file.type || file.type.indexOf("image/") !== 0) {
+          this.error = "Please choose an image file.";
+          return;
+        }
+        var self = this;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          self.error = null;
+          self.imageUrl = e.target.result;
+          self.mountCropper();
+        };
+        reader.readAsDataURL(file);
+      },
+
+      onFilePicked(event) {
+        var file = event.target.files[0];
+        event.target.value = "";
+        this.readFile(file);
+      },
+
+      onDrop(event) {
+        this.dragging = false;
+        var file = event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0];
+        this.readFile(file);
+      },
+
+      cancel() {
+        if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
+        this.$store.modals.close();
+      },
+
+      confirm() {
+        if (!this.cropper) return;
+        var self = this;
+        // Cap WIDTH only. For a fixed-aspect crop the aspect already bounds the
+        // height (= width / aspectRatio); also passing maxHeight makes cropper.js
+        // downscale the whole SOURCE to fit maxHeight when the source is taller
+        // (a 1983x793 upload -> 500/793 ~= 0.63x), tanking fidelity. maxWidth
+        // alone keeps the crop at source resolution up to the cap.
+        var canvasOpts = { maxWidth: this.maxWidth, imageSmoothingQuality: "high" };
+        if (!this.transparent) canvasOpts.fillColor = "#ffffff";
+        var canvas = this.cropper.getCroppedCanvas(canvasOpts);
+        canvas.toBlob(function (blob) {
+          try {
+            window.dispatchEvent(new CustomEvent("crop-photo-confirmed", { detail: { blob: blob } }));
+          } catch (_) {}
+          if (self.cropper) { self.cropper.destroy(); self.cropper = null; }
+          // dispatch mode: the opener's host owns the post-confirm flow
+          // (processing modal -> success toast), so don't pop the stack here.
+          // fromParent (no dispatch): close the modal now.
+          if (!self.dispatch) self.$store.modals.close();
+        }, "image/png");
+      }
+    };
+  }
+  window.cropPhotoModal = cropPhotoModal;
+  if (typeof Alpine !== "undefined") {
+    Alpine.data("cropPhotoModal", cropPhotoModal);
+  } else {
+    document.addEventListener("alpine:init", function () { Alpine.data("cropPhotoModal", cropPhotoModal); });
+  }
+
+  // === window.submitFormWithProgress — loading card + toast for a Turbo submit
+  //
+  // Swaps in the 'saving' card while the form uploads, then closes it (held
+  // >= ~450ms so it doesn't flash) and toasts on completion. opts: { saving,
+  // success, successMessage, failure, failureMessage, dismissible (default
+  // false), toast (default true) }.
+  window.submitFormWithProgress = function (form, opts) {
+    opts = opts || {};
+    var store = window.Alpine && Alpine.store("modals");
+    var hold = (window.StudioModals && window.StudioModals.holdAtLeast)
+      ? window.StudioModals.holdAtLeast(450)
+      : { then: function (cb) { cb(); } };
+    if (store) {
+      store.open("saving", { dismissible: opts.dismissible === true, title: opts.saving || "Saving…" }, { replace: true });
+    }
+    var onEnd = function (e) {
+      form.removeEventListener("turbo:submit-end", onEnd);
+      var ok = e.detail && e.detail.success;
+      hold.then(function () {
+        if (store) store.close();
+        if (opts.toast !== false) {
+          window.dispatchEvent(new CustomEvent("toast", { detail: {
+            type: ok ? "notice" : "alert",
+            title: ok ? (opts.success || "Saved") : (opts.failure || "Couldn't save"),
+            message: ok ? (opts.successMessage || "") : (opts.failureMessage || "Please try again.")
+          } }));
+        }
+      });
+    };
+    form.addEventListener("turbo:submit-end", onEnd);
+    form.requestSubmit();
+  };
+
+  // === window.imageUploadHost — x-data host for crop-then-immediate-save ======
+  //
+  // Two entry points feed the SHARED crop-photo modal in dispatch mode:
+  //   open()           — the modal itself is the click/drag-drop target (banner)
+  //   onFileSelected() — a native file picker hands the image in (avatar)
+  // Both dispatch the cropped Blob via 'crop-photo-confirmed'; applyCrop() drops
+  // it into the host's own hidden form input and submits immediately with a
+  // loading card + toast (submitFormWithProgress). opts = crop config
+  // (aspectRatio, maxWidth, maxHeight, transparent, autoCropArea) + save copy
+  // (saving, success, successMessage, failure, dismissible, toast, filename).
+  window.imageUploadHost = function (opts) {
+    opts = opts || {};
+    function cropProps(extra) {
+      var p = {
+        aspectRatio: opts.aspectRatio || 1,
+        transparent: opts.transparent !== false,
+        dispatch: true
+      };
+      if (opts.maxWidth) p.maxWidth = opts.maxWidth;
+      if (opts.maxHeight) p.maxHeight = opts.maxHeight;
+      if (opts.autoCropArea) p.autoCropArea = opts.autoCropArea;
+      if (extra) { for (var k in extra) { p[k] = extra[k]; } }
+      return p;
+    }
+    return {
+      // Modal-as-picker: the crop modal itself is the file picker / drop target.
+      open() {
+        if (!window.Alpine || !Alpine.store("modals")) return;
+        Alpine.store("modals").open("crop-photo", cropProps());
+      },
+      // Native picker: read the chosen image, then hand it to the modal.
+      onFileSelected(event) {
+        var file = event.target.files[0];
+        if (!file) return;
+        var reader = new FileReader();
+        reader.onload = function (e) {
+          Alpine.store("modals").open("crop-photo", cropProps({ imageUrl: e.target.result }));
+        };
+        reader.readAsDataURL(file);
+        event.target.value = "";
+      },
+      applyCrop(blob) {
+        if (!blob) return;
+        var dt = new DataTransfer();
+        dt.items.add(new File([blob], opts.filename || "image.png", { type: "image/png" }));
+        this.$refs.fileInput.files = dt.files;
+        window.submitFormWithProgress(this.$refs.form, opts);
+      }
+    };
+  };
+</script>
