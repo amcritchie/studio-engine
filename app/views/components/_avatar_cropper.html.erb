@@ -1,15 +1,22 @@
-<%# locals: (form_field_name: "user[avatar]") %>
-<%# Self-contained avatar cropper: Cropper.js CDN + Alpine.js component %>
-<%# Output: sets a cropped 256x256 PNG File on the hidden file input for standard Rails upload %>
+<%# Avatar cropper — a deferred form field. Stages a cropped 256x256 PNG on a
+    hidden file input (the enclosing form submits it later) and shows a round
+    preview. The crop interaction runs through the SHARED crop-photo modal
+    (Alpine.store('modals').open('crop-photo', { imageUrl })) — so register that
+    modal in your host block per the v0.4.12 integration. The parent receives the
+    cropped Blob back via the 'crop-photo-confirmed' window event.
 
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.css">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/cropperjs/1.6.2/cropper.min.js"></script>
+    Distinct from imageUploadHost (immediate-save): this STAGES the file and
+    lets the enclosing form own the submit (signup / profile edit).
 
-<div x-data="avatarCropper()" class="space-y-3">
-  <%# Hidden file input that receives the cropped file %>
+    Locals: form_field_name (e.g. "user[avatar]"). %>
+
+<%= render "studio/cropper_assets" %>
+
+<div x-data="avatarCropperHost()"
+     @crop-photo-confirmed.window="applyCrop($event.detail.blob)"
+     class="space-y-3">
   <input type="file" name="<%= form_field_name %>" x-ref="hiddenFileInput" class="hidden">
 
-  <%# Preview + pick button %>
   <div class="flex items-center gap-4">
     <div class="relative w-16 h-16 rounded-full overflow-hidden bg-surface-alt border-2 border-subtle flex-shrink-0">
       <template x-if="croppedUrl">
@@ -23,8 +30,7 @@
         </div>
       </template>
     </div>
-    <button type="button" @click="$refs.filePicker.click()"
-            class="btn btn-outline btn-sm">
+    <button type="button" @click="$refs.filePicker.click()" class="btn btn-outline btn-sm">
       <span x-text="croppedUrl ? 'Change Photo' : 'Upload Photo'"></span>
     </button>
     <template x-if="croppedUrl">
@@ -32,101 +38,41 @@
     </template>
   </div>
 
-  <%# Invisible file picker %>
   <input type="file" x-ref="filePicker" @change="onFileSelected($event)" accept="image/*" class="hidden">
-
-  <%# Crop overlay %>
-  <template x-if="showCropModal">
-    <div class="fixed inset-0 z-[110] flex items-center justify-center" @keydown.escape.window="cancelCrop()">
-      <div class="absolute inset-0 bg-black/70" @click="cancelCrop()"></div>
-      <div class="relative bg-surface rounded-2xl border border-subtle shadow-2xl p-6 max-w-md w-full mx-4">
-        <h3 class="text-heading font-bold text-lg mb-4">Crop Photo</h3>
-        <div class="w-full" style="max-height: 360px;">
-          <img x-ref="cropImage" :src="rawImageUrl" class="max-w-full" style="display: block;">
-        </div>
-        <div class="flex justify-end gap-3 mt-4">
-          <button type="button" @click="cancelCrop()" class="btn btn-outline btn-sm">Cancel</button>
-          <button type="button" @click="confirmCrop()" class="btn btn-primary btn-sm">Crop & Save</button>
-        </div>
-      </div>
-    </div>
-  </template>
 </div>
 
 <script>
-function avatarCropper() {
+function avatarCropperHost() {
   return {
-    cropper: null,
-    showCropModal: false,
-    rawImageUrl: null,
     croppedUrl: null,
 
     onFileSelected(event) {
       var file = event.target.files[0];
       if (!file) return;
-
       var self = this;
       var reader = new FileReader();
       reader.onload = function(e) {
-        self.rawImageUrl = e.target.result;
-        self.showCropModal = true;
-        self.$nextTick(function() {
-          self.initCropper();
-        });
+        // Hand the raw image to the shared modal host; the crop-photo modal
+        // owns the cropper UI and posts back via 'crop-photo-confirmed'.
+        Alpine.store('modals').open('crop-photo', { imageUrl: e.target.result });
       };
       reader.readAsDataURL(file);
-      // Reset so same file can be re-selected
-      event.target.value = '';
+      event.target.value = '';  // allow re-selecting the same file
     },
 
-    initCropper() {
-      if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
-      var image = this.$refs.cropImage;
-      this.cropper = new Cropper(image, {
-        aspectRatio: 1,
-        viewMode: 1,
-        dragMode: 'move',
-        autoCropArea: 0.9,
-        cropBoxResizable: true,
-        cropBoxMovable: true,
-        background: false,
-        guides: true
-      });
-    },
-
-    confirmCrop() {
-      var self = this;
-      var canvas = this.cropper.getCroppedCanvas({ width: 256, height: 256 });
-      canvas.toBlob(function(blob) {
-        // Revoke previous blob URL to prevent memory leak
-        if (self.croppedUrl) URL.revokeObjectURL(self.croppedUrl);
-        // Set cropped preview
-        self.croppedUrl = URL.createObjectURL(blob);
-
-        // Assign file to hidden input via DataTransfer
-        var file = new File([blob], 'avatar.png', { type: 'image/png' });
-        var dt = new DataTransfer();
-        dt.items.add(file);
-        self.$refs.hiddenFileInput.files = dt.files;
-
-        self.closeCropModal();
-      }, 'image/png');
-    },
-
-    cancelCrop() {
-      this.closeCropModal();
-    },
-
-    closeCropModal() {
-      if (this.cropper) { this.cropper.destroy(); this.cropper = null; }
-      this.showCropModal = false;
-      this.rawImageUrl = null;
+    applyCrop(blob) {
+      if (!blob) return;
+      if (this.croppedUrl) URL.revokeObjectURL(this.croppedUrl);
+      this.croppedUrl = URL.createObjectURL(blob);
+      var file = new File([blob], 'avatar.png', { type: 'image/png' });
+      var dt = new DataTransfer();
+      dt.items.add(file);
+      this.$refs.hiddenFileInput.files = dt.files;
     },
 
     removePhoto() {
       if (this.croppedUrl) URL.revokeObjectURL(this.croppedUrl);
       this.croppedUrl = null;
-      // Clear the hidden file input
       var dt = new DataTransfer();
       this.$refs.hiddenFileInput.files = dt.files;
     }
