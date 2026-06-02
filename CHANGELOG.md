@@ -2,6 +2,38 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.12 (2026-06-02)
+
+Promotes the image crop-and-upload UI out of Turf Monster into the engine: a shared cropper modal, the immediate-save upload host, the loading-card-around-a-Turbo-submit helper, and the generic "saving" card. Any consumer can now add a cropped image upload (avatar, banner, logo, OG image) with one `imageUploadHost(...)` x-data plus the cropper assets partial — no bespoke JS.
+
+### Added
+- **`studio/_cropper_assets`** — cropper.js (1.6.2) CSS + JS **and** the three inline factories below. Render it on pages that can open the cropper (avatar field, banner editor); both the library and the behavior load only where an upload trigger exists. The JS rides with the page, **not** the modal host, so it works whether or not an app overrides `studio/modals/_host`.
+  - `window.imageUploadHost(opts)` — x-data host for crop-then-immediate-save uploaders. `open()` (modal-as-picker) / `onFileSelected()` (native picker) → `applyCrop()` drops the Blob into a hidden form input and submits with a loading card + toast.
+  - `window.submitFormWithProgress(form, opts)` — opens the `saving` card, holds ≥450ms, submits the Turbo form, then closes + toasts on `turbo:submit-end`.
+  - `window.cropPhotoModal(opts)` — the crop modal's x-data factory.
+- **`studio/modals/_crop_photo`** — the shared image cropper modal. Opens via `Alpine.store('modals').open('crop-photo', { imageUrl?, aspectRatio?, maxWidth?, maxHeight?, transparent?, autoCropArea?, dispatch? })`; hands the cropped Blob back via the `crop-photo-confirmed` window event.
+- **`studio/modals/_saving`** — generic loading card (title from `props.title`), opened by `submitFormWithProgress`.
+
+### Integration
+Register the two modals in your `studio/modals/host` block + render the assets on each upload page:
+```erb
+<%# inside the studio/modals/host block %>
+<template x-if="$store.modals.current().id === 'crop-photo'"><%= render "studio/modals/crop_photo" %></template>
+<template x-if="$store.modals.current().id === 'saving'"><%= render "studio/modals/saving" %></template>
+
+<%# on each page with an image upload %>
+<%= render "studio/cropper_assets" %>
+<div x-data="imageUploadHost({ aspectRatio: 1, filename: 'avatar.png', saving: 'Saving photo…', dismissible: true, toast: false })"
+     @crop-photo-confirmed.window="applyCrop($event.detail.blob)"> … hidden form (x-ref form + fileInput) + trigger … </div>
+```
+Registrations live in the host **block** (the consumer's `yield` content), so apps that override `studio/modals/_host` — like Turf Monster, which has a substantially diverged host — integrate the same way.
+
+### Migration
+For an app that had its own copies (Turf Monster):
+1. `bundle update studio-engine`.
+2. Delete the local `crop_photo_modal.js` (+ its importmap pin / `application.js` import), the `imageUploadHost` + `submitFormWithProgress` definitions, and `modals/_crop_photo` / `modals/_saving` / `shared/_cropper_assets`.
+3. Point the host block's crop-photo / saving registrations at `studio/modals/crop_photo` / `studio/modals/saving`, and the cropper-asset renders at `studio/cropper_assets`.
+
 ## v0.4.11 (2026-05-24)
 
 Preserves non-dismissible modals (e.g. pending on-chain TX) across bfcache restore and Turbo snapshot caching. Previously, the modal host's cleanup hooks called `closeAll()` on both `pageshow.persisted` and `turbo:before-cache`, which silently dropped any `dismissible: false` modal — including the processing card a still-in-flight JS promise was expecting to resolve against. The promise's `solanaModal.success()` then no-op'd against an empty stack and the user saw nothing despite their TX landing on-chain.
