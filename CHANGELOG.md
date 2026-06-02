@@ -2,6 +2,19 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
 
+## v0.4.13 (2026-06-02)
+
+Promotes `components/_avatar_cropper` onto the shared crop-photo modal — completing the image-upload extraction started in v0.4.12. The avatar cropper is the **deferred-form-field** counterpart to `imageUploadHost`: it stages a cropped PNG on a hidden file input + shows a round preview, and the enclosing form (signup / profile edit) submits later (vs. `imageUploadHost`, which submits immediately).
+
+### Changed
+- **`components/_avatar_cropper`** now drives its crop through the shared `crop-photo` modal (`Alpine.store('modals').open('crop-photo', { imageUrl })`) and renders `studio/cropper_assets`, replacing the old bespoke `z-[110]` overlay + direct cropper.js load + the `avatarCropper()` factory (now `avatarCropperHost()`). The parent gets the cropped Blob back via the `crop-photo-confirmed` window event.
+
+### Integration
+Consumers rendering `components/avatar_cropper` now need the v0.4.12 image-upload integration: the `crop-photo` modal registered in the modal-host block (see v0.4.12 → Integration). The partial renders `studio/cropper_assets` itself, so cropper.js + the factories load where it's used.
+
+### Migration
+Apps that kept a local override of `components/_avatar_cropper` to route it through the shared modal (Turf Monster) can **delete the override** and use this.
+
 ## v0.4.12 (2026-06-02)
 
 Promotes the image crop-and-upload UI out of Turf Monster into the engine: a shared cropper modal, the immediate-save upload host, the loading-card-around-a-Turbo-submit helper, and the generic "saving" card. Any consumer can now add a cropped image upload (avatar, banner, logo, OG image) with one `imageUploadHost(...)` x-data plus the cropper assets partial — no bespoke JS.
