@@ -16,6 +16,29 @@ module Studio
   mattr_accessor :sso_logo,            default: nil
   mattr_accessor :theme_logos,         default: []
 
+  # ---- Authentication ------------------------------------------------------
+  # Which sign-in methods this app offers. The shared login/signup views render
+  # a button/field per enabled method (gate with Studio.auth_method?). Order is
+  # display order. Both McRitchie Studio + Turf Monster are passwordless; legacy
+  # email+password is opt-in via :password (which also re-arms the User#authenticate
+  # contract check — see validate_user_contract!).
+  mattr_accessor :auth_methods, default: %i[magic_link google wallet]
+
+  # Magic-link (passwordless email) tuning. token_name keys the MessageVerifier
+  # purpose; bump it to invalidate every outstanding link. See MagicLink service.
+  mattr_accessor :magic_link_ttl,        default: 15.minutes
+  mattr_accessor :magic_link_token_name, default: "magic_link_v1"
+
+  # Whether Studio.routes draws the magic_link + solana wallet routes. An app that
+  # already defines its own auth routes (e.g. turf-monster, which has battle-tested
+  # magic_link/solana routes + extras) sets this false to avoid duplicate route
+  # NAMES at boot, keeping its own routes intact. New consumers leave it true.
+  mattr_accessor :draw_auth_routes, default: true
+
+  # Default From: for engine-sent mail (magic links). Apps set this to their
+  # verified Resend sending address in config/initializers/studio.rb.
+  mattr_accessor :mailer_from, default: nil
+
   # Theme role colors (7 roles)
   mattr_accessor :theme_primary,  default: "#8E82FE"
   mattr_accessor :theme_dark,     default: "#1A1535"
@@ -46,13 +69,21 @@ module Studio
   # ActiveRecord defines them lazily — they don't appear on `.instance_methods`
   # until the schema is introspected (typically first record access). Missing
   # columns are caught by the User table schema, not by this validator.
-  REQUIRED_USER_INSTANCE_METHODS = %i[authenticate admin? display_name].freeze
+  REQUIRED_USER_INSTANCE_METHODS = %i[admin? display_name].freeze
   REQUIRED_USER_CLASS_METHODS    = %i[find_by].freeze
+  # #authenticate is only required when email+password sign-in is enabled.
+  # Passwordless apps (the default) never call it.
+  PASSWORD_USER_INSTANCE_METHODS = %i[authenticate].freeze
 
   class UserContractError < StandardError; end
 
   def self.configure
     yield self
+  end
+
+  # True when the given sign-in method is enabled for this app.
+  def self.auth_method?(method)
+    auth_methods.include?(method.to_sym)
   end
 
   # Verifies that the host app's User model satisfies the engine's expected
@@ -67,7 +98,9 @@ module Studio
     REQUIRED_USER_CLASS_METHODS.each do |m|
       missing << "User.#{m}" unless user_class.respond_to?(m)
     end
-    REQUIRED_USER_INSTANCE_METHODS.each do |m|
+    instance_methods = REQUIRED_USER_INSTANCE_METHODS.dup
+    instance_methods.concat(PASSWORD_USER_INSTANCE_METHODS) if auth_method?(:password)
+    instance_methods.each do |m|
       missing << "User##{m}" unless user_class.instance_methods.include?(m)
     end
 
@@ -122,6 +155,26 @@ module Studio
       post "signup", to: "registrations#create"
       get  "auth/:provider/callback", to: "omniauth_callbacks#create"
       get  "auth/failure", to: "omniauth_callbacks#failure"
+
+      # Passwordless email (magic link). Helpers: magic_link_request_path (POST
+      # to request a link) + magic_link_path(token) / magic_link_url(token:)
+      # (the emailed consume link). The token is a URL-safe MessageVerifier blob
+      # but the constraint guards against a stray "." segment.
+      if Studio.draw_auth_routes && Studio.auth_method?(:magic_link)
+        post "magic_link",        to: "magic_links#create",  as: :magic_link_request
+        get  "magic_link/:token", to: "magic_links#consume", as: :magic_link,
+             constraints: { token: %r{[^/]+} }
+      end
+
+      # Solana / Phantom wallet sign-in (nonce challenge + signature verify).
+      # The browser posts to these literal paths from the shared Connect-Wallet
+      # flow; app-specific surfaces (mobile deep-link callback, account-linking,
+      # OAuth popup) stay in the consuming app's routes.
+      if Studio.draw_auth_routes && Studio.auth_method?(:wallet)
+        get  "auth/solana/nonce",  to: "solana_sessions#nonce",  as: :solana_nonce
+        post "auth/solana/verify", to: "solana_sessions#verify", as: :solana_verify
+      end
+
       resources :error_logs, only: [:index, :show]
 
       # Admin

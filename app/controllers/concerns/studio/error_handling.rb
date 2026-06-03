@@ -8,7 +8,8 @@ module Studio
 
       before_action :require_authentication
 
-      helper_method :current_user, :logged_in?, :sso_user_available?, :sso_display_name, :sso_source_app, :sso_hub_logo, :admin?
+      helper_method :current_user, :logged_in?, :sso_user_available?, :sso_display_name, :sso_source_app, :sso_hub_logo, :admin?,
+                    :onchain_session?, :wallet_context, :client_session_payload
     end
 
     private
@@ -21,6 +22,25 @@ module Studio
     def set_app_session(user)
       # App-specific session (only this app reads this key)
       session[Studio.session_key] = user.id
+
+      # OPSEC-045: bind a rotating per-user token into the cookie. The
+      # verify_session_token filter compares it to user.session_token on every
+      # request, so a server-side rotation (email change, "log out everywhere")
+      # invalidates stolen sessions. Guarded for consumers whose User has no
+      # session_token column. Backfills a blank token (legacy rows / fixtures
+      # predate the column) so they aren't force-logged-out on the next request.
+      if user.respond_to?(:session_token)
+        if user.session_token.blank? && user.respond_to?(:update_column)
+          user.update_column(:session_token, SecureRandom.hex(32))
+        end
+        session[:session_token] = user.session_token
+      end
+
+      # The on-chain-session flag is a Phantom-wallet-signature privilege.
+      # Reset it on every login so a stale flag from an earlier wallet session
+      # can't leak into a later email/Google login. SolanaSessionsController#verify
+      # re-grants it for genuine wallet auth.
+      session.delete(:onchain)
 
       # Only update shared awareness fields if this app is the source
       # (don't overwrite the other app's sso_source when logging in via sso_continue)
@@ -37,6 +57,8 @@ module Studio
 
     def clear_app_session
       session.delete(Studio.session_key)
+      session.delete(:session_token)
+      session.delete(:onchain)
 
       # Clear sso_* fields only if this app is the source
       # (preserve them if the other app set them — they're still logged in there)
@@ -72,10 +94,70 @@ module Studio
       current_user.present?
     end
 
+    # Format-aware: a full-page HTML request gets the login redirect, but an
+    # AJAX/Turbo request gets a clean 401 (a blind redirect to the HTML login
+    # page makes Rails return 406 Not Acceptable for an `Accept: application/json`
+    # request — OPSEC-046). The JS fetch layer turns the 401 into a login modal.
     def require_authentication
-      unless logged_in?
-        redirect_to login_path
+      return if logged_in?
+
+      respond_to do |format|
+        format.html         { redirect_to login_path }
+        format.json         { render json: { error: "unauthenticated" }, status: :unauthorized }
+        format.turbo_stream { head :unauthorized }
+        format.any          { head :unauthorized }
       end
+    end
+
+    # Populates Current.* for the request lifecycle so audit/logging layers can
+    # attribute work to the viewer without param threading. Best-effort —
+    # never breaks the request path. Apps wire this as a before_action.
+    def set_current_context
+      Current.user = current_user if logged_in?
+    rescue StandardError
+      nil
+    end
+
+    # OPSEC-045: enforce session-token binding. No-ops for consumers whose User
+    # has no session_token. Runs early (apps wire it as a before_action ahead of
+    # require_authentication) so a stale session is cleared before current_user
+    # is read downstream.
+    def verify_session_token
+      return unless logged_in?
+      return unless current_user.respond_to?(:session_token)
+
+      user_token   = current_user.session_token
+      cookie_token = session[:session_token]
+      return if user_token.present? && user_token == cookie_token
+
+      Rails.logger.info("[opsec-045] session_token mismatch user_id=#{current_user.id} — forcing re-login")
+      @current_user = nil
+      clear_app_session
+      respond_to do |format|
+        format.html { redirect_to login_path, alert: "Your session expired. Please sign in again." }
+        format.json { render json: { error: "session expired" }, status: :unauthorized }
+        format.any  { head :unauthorized }
+      end
+    end
+
+    # True when this session authenticated via a live Solana wallet signature
+    # (not email/Google). Set by SolanaSessionsController#verify.
+    def onchain_session?
+      session[:onchain] == true
+    end
+
+    # Canonical auth + wallet state for this request — the single source of truth
+    # the whole UI branches on (web3 / web2 / guest). Serialised into the page and
+    # mirrored client-side by Alpine.store('session'). See SessionContext.
+    def wallet_context
+      @wallet_context ||= SessionContext.new(user: current_user, onchain_session: onchain_session?)
+    end
+
+    # Payload serialised into #session-context for Alpine.store('session').
+    # Baseline = identity only (SessionContext stays RPC-free). Apps override to
+    # merge on-chain balances/tokens they already preloaded for the request.
+    def client_session_payload
+      wallet_context.to_h
     end
 
     def require_admin
