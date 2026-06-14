@@ -37,7 +37,7 @@ module Studio
   mattr_accessor :draw_auth_routes, default: true
 
   # Default From: for engine-sent mail (magic links). Apps set this to their
-  # verified Resend sending address in config/initializers/studio.rb.
+  # verified sending address in config/initializers/studio.rb.
   mattr_accessor :mailer_from, default: nil
 
   # Theme role colors (7 roles)
