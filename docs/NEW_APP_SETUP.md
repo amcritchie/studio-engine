@@ -473,9 +473,13 @@ Pin in `config/importmap.rb` and import in `application.js`.
 
 Add to `.env` (see [ENV_SETUP.md](ENV_SETUP.md)):
 ```env
-SOLANA_ADMIN_KEY=base58-encoded-keypair
+SOLANA_ADMIN_KEY=...
 SOLANA_RPC_URL=https://api.devnet.solana.com
 ```
+
+Use the owning app docs and McRitchie Studio credential inventory for the
+current 1Password item names. Do not copy wallet addresses or private key
+material into this engine setup guide.
 
 ### Wallet Types
 

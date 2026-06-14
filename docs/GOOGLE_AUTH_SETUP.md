@@ -5,18 +5,20 @@ How to add Google sign-in to a new McRitchie app.
 ## Prerequisites
 
 - A Google Cloud project with OAuth 2.0 credentials
-- The shared `/Users/alex/projects/.env` file (already has `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`)
+- An app-local `.env` file, hydrated from McRitchie Studio's credential inventory or the app's hosting config
 
 ## Shared Credentials
 
-All local apps share one `.env` file at the project root (`/Users/alex/projects/.env`):
+Each local app should carry its own `.env`:
 
 ```env
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
 ```
 
-Apps load this via `dotenv-rails` in development/test. In production (Heroku), set these as config vars.
+Apps load this via `dotenv-rails` in development/test. In production, set these
+as config vars on the deployed app. McRitchie Studio's agent credential docs are
+the source of truth for 1Password item names.
 
 ## Steps for a New App
 
@@ -100,7 +102,7 @@ Add the callback URL for your new app:
 |-----|------|---------|----------|
 | McRitchie Studio | 3000 | `http://localhost:3000/auth/google_oauth2/callback` | `https://app.mcritchie.studio/auth/google_oauth2/callback` |
 | Turf Monster | 3100 | `http://localhost:3100/auth/google_oauth2/callback` | `https://app.turfmonster.media/auth/google_oauth2/callback` |
-| Tax Studio | 3003 | `http://localhost:3003/auth/google_oauth2/callback` | `https://tax.mcritchie.studio/auth/google_oauth2/callback` |
+| Tax Studio | 3200 | `http://localhost:3200/auth/google_oauth2/callback` | `https://tax.mcritchie.studio/auth/google_oauth2/callback` |
 
 ### 6. Routes (already handled)
 
@@ -128,4 +130,4 @@ heroku config:set GOOGLE_CLIENT_SECRET=your-secret --app your-app
 
 - **"No route matches [POST] /auth/google_oauth2"** — missing OmniAuth gems or initializer. Run `bundle install` and restart.
 - **"redirect_uri_mismatch"** — the callback URI isn't registered in Google Cloud Console. Add it (see step 5).
-- **Credentials not loading** — ensure `dotenv-rails` is in Gemfile and `.env` file is at `/Users/alex/projects/.env`.
+- **Credentials not loading** — ensure `dotenv-rails` is in the Gemfile and the app-local `.env` exists.

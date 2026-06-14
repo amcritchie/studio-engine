@@ -1,122 +1,99 @@
 # Environment Variables Setup
 
-All McRitchie apps share a single `.env` file at the project root for local development.
+`studio-engine` is a shared Rails engine. It does not own a global `.env` file
+and should not document live secret values. Each consuming app owns its local
+`.env` and production config vars. McRitchie Studio owns the cross-repo
+credential inventory and 1Password item naming.
 
-## File Location
+Start with:
 
-```
-/Users/alex/projects/.env
-```
+- McRitchie Studio: `docs/agents/modules/credentials.md`
+- McRitchie Studio: `docs/agents/modules/credential-inventory.md`
+- McRitchie Studio: `docs/agents/system/house-burn-down.md`
 
-All apps use `dotenv-rails` which walks up the directory tree, so a `.env` at the parent level is loaded by every app in a subdirectory.
+## Local File Locations
 
-## Variables
+Use per-app env files:
 
-| Variable | Used By | Source | How to Recreate |
-|----------|---------|--------|-----------------|
-| `SECRET_KEY_BASE` | All apps | `rails secret` | Run `rails secret` once, share across all apps. Must be identical for SSO shared cookies to work across `*.mcritchie.studio`. |
-| `GOOGLE_CLIENT_ID` | All apps | Google Cloud Console | See [GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md). Go to [APIs & Services > Credentials](https://console.cloud.google.com/apis/credentials), create/find the OAuth 2.0 Client ID. |
-| `GOOGLE_CLIENT_SECRET` | All apps | Google Cloud Console | Same location as Client ID — click the OAuth client to reveal the secret. |
-| `MAIL_TRANSPORT` | Apps that send mail | `.env` / hosting config | `ses` for AWS SES, `resend` or unset for Resend rollback. |
-| `SES_REGION` | Apps that send mail | AWS SES | Region for SES SMTP/API, currently `us-east-2`. |
-| `SES_SMTP_USERNAME` | Apps that send mail | AWS SES SMTP credentials | Create SMTP credentials in SES for the verified sending domain. |
-| `SES_SMTP_PASSWORD` | Apps that send mail | AWS SES SMTP credentials | Pair for `SES_SMTP_USERNAME`. |
-| `RESEND_API_KEY` | Apps that send mail | Resend dashboard | Rollback transport while Resend remains available. |
-| `MAILER_FROM` | Apps that send mail | Verified sending domain | Must belong to a domain verified by the active transport. |
-| `ANTHROPIC_API_KEY` | Tax Studio | Anthropic Console | Go to [console.anthropic.com/settings/keys](https://console.anthropic.com/settings/keys), create an API key. Used for AI expense classification. |
-| `SOLANA_ADMIN_KEY` | Turf Monster | Solana CLI | The base58-encoded keypair for the admin wallet (`F6f8h5y...`). Export with `solana config get keypair` then `cat` the file contents. See [SOLANA docs](../../turf-monster/docs/SOLANA.md). |
-
-## Recreating From Scratch
-
-### 1. Create the file
-
-```bash
-touch /Users/alex/projects/.env
+```text
+/Users/alex/projects/mcritchie-studio/.env
+/Users/alex/projects/turf-monster/.env
 ```
 
-### 2. SECRET_KEY_BASE
+A parent `/Users/alex/projects/.env` may exist as legacy/bootstrap context, but
+new docs and scripts should prefer app-local files unless a value is truly
+cross-app and intentionally shared.
 
-```bash
-cd /Users/alex/projects/mcritchie-studio  # any Rails app
-echo "SECRET_KEY_BASE=$(bin/rails secret)" >> /Users/alex/projects/.env
-```
+## Engine-Level Variables
 
-**Critical**: All apps must share the same `SECRET_KEY_BASE` for the shared session cookie (`_studio_session`) to work across `*.mcritchie.studio`. This enables SSO between apps.
+The engine reads these values only through consumer apps.
 
-### 3. Google OAuth
+| Variable | Used by | Notes |
+| --- | --- | --- |
+| `SECRET_KEY_BASE` or `RAILS_MASTER_KEY` | Rails session/cookie encryption | Apps that participate in shared SSO need compatible session secrets. Turf Monster intentionally isolates its money-app cookie. |
+| `GOOGLE_CLIENT_ID` | Google OAuth consumers | Register each app callback URL in Google Cloud Console. |
+| `GOOGLE_CLIENT_SECRET` | Google OAuth consumers | Keep per environment; never commit. |
+| `MAIL_TRANSPORT` | Apps that send mail | `ses` is the target default; Resend remains rollback. |
+| `SES_REGION` | SES transport | Defaults by app/provider convention if absent. |
+| `SES_SMTP_USERNAME` | SES transport | From AWS SES SMTP credentials. |
+| `SES_SMTP_PASSWORD` | SES transport | Pair for `SES_SMTP_USERNAME`. |
+| `RESEND_API_KEY` | Resend rollback | Used only when SES is inactive or unavailable. |
+| `MAILER_FROM` | Apps that send mail | Must belong to a domain verified by the selected provider. |
 
-1. Go to [Google Cloud Console](https://console.cloud.google.com/apis/credentials)
-2. Create a project (or use existing)
-3. Create an OAuth 2.0 Client ID (Web application)
-4. Add authorized redirect URIs for each app (see [GOOGLE_AUTH_SETUP.md](GOOGLE_AUTH_SETUP.md))
-5. Copy Client ID and Client Secret into `.env`:
+App-specific variables such as `SOLANA_ADMIN_KEY`, RPC URLs, AWS bucket names,
+or product API keys belong in the owning app's docs and McRitchie Studio's
+credential inventory. Do not copy wallet addresses or private key material into
+engine docs.
+
+## Example Consumer App `.env`
 
 ```env
-GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
-```
+RAILS_MASTER_KEY=...
+GOOGLE_CLIENT_ID=...
+GOOGLE_CLIENT_SECRET=...
 
-### 4. Shared Email Transport
-
-Apps call `Studio::MailTransport.configure!` from
-`config/initializers/studio_mail_transport.rb`.
-
-```env
 MAIL_TRANSPORT=ses
 SES_REGION=us-east-2
 SES_SMTP_USERNAME=...
 SES_SMTP_PASSWORD=...
-MAILER_FROM=noreply@example.com
 RESEND_API_KEY=... # rollback only
+MAILER_FROM=noreply@example.com
 ```
 
-SES must be out of sandbox and the `MAILER_FROM` domain must be verified. Use
-`bin/rails ses:check` and `bin/rails "ses:verify_domain[example.com]"` in a
-consumer app.
+Turf Monster also needs Solana and wallet-encryption variables. Use its
+`README.md`, `docs/LOCAL_STACK.md`, and McRitchie Studio credential inventory
+for the current item names.
 
-### 5. Anthropic API Key
+## Production
 
-1. Go to [console.anthropic.com](https://console.anthropic.com/settings/keys)
-2. Create an API key
-3. Add to `.env`:
-
-```env
-ANTHROPIC_API_KEY=sk-ant-...
-```
-
-### 6. Solana Admin Key (Turf Monster only)
-
-1. Generate or locate the admin keypair file
-2. The key is the base58-encoded private key for wallet `F6f8h5yynbnkgWvU5abQx3RJxJpe8EoQmeFBuNKdKzhZ`
-3. Add to `.env`:
-
-```env
-SOLANA_ADMIN_KEY=base58-encoded-keypair
-```
-
-## Production (Heroku)
-
-Each Heroku app needs its own config vars. Set them per-app:
+Set config vars per deployed app. Do not assume all apps share every credential.
 
 ```bash
-# Shared across all apps
-heroku config:set SECRET_KEY_BASE=... --app mcritchie-studio
-heroku config:set SECRET_KEY_BASE=... --app turf-monster
-
-# Google OAuth (all apps that use it)
 heroku config:set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... --app mcritchie-studio
-heroku config:set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... --app turf-monster
-
-# App-specific
-heroku config:set ANTHROPIC_API_KEY=... --app tax-studio-app
-heroku config:set SOLANA_ADMIN_KEY=... SOLANA_RPC_URL=... --app turf-monster
+heroku config:set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... --app turf-monster-mainnet
+heroku config:set MAIL_TRANSPORT=ses SES_REGION=us-east-2 --app mcritchie-studio
+heroku config:set MAIL_TRANSPORT=ses SES_REGION=us-east-2 --app turf-monster-mainnet
 ```
 
-`DATABASE_URL` and `REDIS_URL` are set automatically by Heroku addons.
+Use McRitchie Studio's recovery scripts to hydrate local env files from Heroku
+and 1Password during a fresh-machine rebuild.
+
+## Email Transport
+
+Consumer apps should call:
+
+```ruby
+# config/initializers/studio_mail_transport.rb
+Studio::MailTransport.configure!
+```
+
+See [`EMAIL_TRANSPORT.md`](EMAIL_TRANSPORT.md) for SES/Resend selection rules
+and SES helper tasks.
 
 ## Security Notes
 
-- `.env` is gitignored — never committed to any repo
-- The shared file approach means all apps on this machine have access to all keys
-- Rotate `SECRET_KEY_BASE` = all users get logged out of all apps (session cookies invalidated)
-- Rotate `GOOGLE_CLIENT_SECRET` = regenerate in Google Cloud Console, update `.env` and all Heroku apps
+- `.env` files are gitignored and must never be committed.
+- Use 1Password item names in docs and handoffs, not secret values.
+- Keep app-specific secrets app-local unless a shared value is intentional.
+- Rotating Rails session secrets logs users out; coordinate across apps that
+  still rely on shared SSO behavior.
