@@ -13,11 +13,12 @@ rails new x_app --database=postgresql
 cd x_app
 ```
 
-Pick the next available app range in McRitchie Studio's port registry (`mcritchie-studio/docs/agents/modules/ports-and-processes.md`):
+Pick the next available app range in McRitchie Studio's port registry (`mcritchie-studio/config/satellites.yml`; agent workflow notes live in `mcritchie-studio/docs/agents/modules/ports-and-processes.md`):
 
 - 3000-3099 = McRitchie Studio
 - 3100-3199 = Turf Monster
-- 3200-3299 = next app range
+- 3200-3299 = Tax Studio (planned/reserved)
+- 3300-3399 = next candidate range unless the registry says otherwise
 
 Use the first port in the range as the primary callback-ready server. Reserve the rest for worktrees and parallel test stacks.
 
@@ -53,7 +54,7 @@ Replace `config/tailwind.config.js`:
 
 ```js
 const execSync = require('child_process').execSync
-const studioPath = execSync('bundle show studio').toString().trim()
+const studioPath = execSync('bundle show studio-engine').toString().trim()
 
 const studioColors = require(`${studioPath}/tailwind/studio.tailwind.config.js`)
 
@@ -153,7 +154,6 @@ class CreateUsers < ActiveRecord::Migration[7.2]
     create_table :users do |t|
       t.string :name
       t.string :email
-      t.string :password_digest
       t.string :provider
       t.string :uid
       t.string :role, default: "viewer"
@@ -167,6 +167,12 @@ class CreateUsers < ActiveRecord::Migration[7.2]
     add_index :users, [:provider, :uid], unique: true
   end
 end
+```
+
+Add `password_digest` only if the app deliberately enables password auth:
+
+```ruby
+add_column :users, :password_digest, :string, null: false, default: ""
 ```
 
 ### Error Logs
@@ -225,8 +231,10 @@ bin/rails db:create db:migrate
 
 ```ruby
 class User < ApplicationRecord
-  has_secure_password validations: false  # only needed when :password auth is enabled
   include Sluggable
+  # Only add this when Studio.auth_methods includes :password and the users
+  # table has password_digest:
+  # has_secure_password validations: false
 
   def name_slug
     name.present? ? name.parameterize : "user-#{id}"
@@ -254,14 +262,17 @@ class User < ApplicationRecord
       email: auth.info.email,
       name: auth.info.name,
       provider: auth.provider,
-      uid: auth.uid,
-      password: SecureRandom.hex(16) if respond_to?(:password=)
+      uid: auth.uid
     )
   rescue ActiveRecord::RecordNotUnique
     find_by(email: auth.info.email) || find_by(provider: auth.provider, uid: auth.uid)
   end
 end
 ```
+
+Passwordless apps should not assign throwaway passwords. Email proof comes from
+`MagicLink.consume`; Google proof comes from OmniAuth and any host-level token
+validation you add.
 
 ## 7. Application Controller
 
@@ -275,6 +286,12 @@ end
 
 ```ruby
 Rails.application.routes.draw do
+  # Optional but recommended for passwordless apps: make /signin the canonical
+  # create-or-login page and redirect legacy GETs there.
+  get "signin", to: "sessions#new", as: :signin
+  get "login",  to: redirect("/signin"), as: nil
+  get "signup", to: redirect("/signin"), as: nil
+
   Studio.routes(self)
 
   root "pages#index"
@@ -285,6 +302,13 @@ Rails.application.routes.draw do
   # App-specific routes here...
 end
 ```
+
+`Studio.routes(self)` draws `POST /magic_link`, `GET /magic_link/:token`, and
+`POST /magic_link/:token` when `Studio.auth_methods` includes `:magic_link`.
+The stock engine auth views are still password-era views; for a passwordless
+app, override the sign-in page so the email form posts to
+`magic_link_request_path` and the Google button posts to `/auth/google_oauth2`.
+Use Turf Monster's `/signin` flow as the full-featured reference.
 
 ## 9. Layout
 
@@ -391,8 +415,8 @@ bin/rails server -p {PORT}
 - [ ] Homepage loads with navbar, logo, brand title
 - [ ] Dev banner shows yellow "Development Environment" bar with DEV MODE toggle
 - [ ] Dark/light mode toggle works
-- [ ] `/login` shows logo + enabled auth methods
-- [ ] `/signup` shows logo + enabled auth methods
+- [ ] `/signin` (or the app's chosen auth page) shows logo + enabled auth methods
+- [ ] Legacy `/login` and `/signup` GETs redirect to `/signin`, if using the unified auth pattern
 - [ ] Magic-link sign-in works
 - [ ] Google OAuth works (after adding redirect URI)
 - [ ] `/admin/theme` loads (logged in as admin)
@@ -420,11 +444,13 @@ gem "sidekiq"           # Background jobs (ATA creation, balance sync)
 add_column :users, :web2_solana_address, :string             # Managed wallet (server-signed)
 add_column :users, :web3_solana_address, :string             # Phantom wallet (user-signed)
 add_column :users, :encrypted_web2_solana_private_key, :text  # Encrypted keypair
-add_column :users, :balance_cents, :integer, default: 0, null: false
-add_column :users, :promotional_cents, :integer, default: 0, null: false
 add_column :users, :level, :integer, default: 1, null: false
 add_column :users, :username, :string
 ```
+
+Do not add DB balance columns for new Solana apps unless you are intentionally
+building a ledger. Turf Monster's current model keeps USDC/USDT in each user's
+token account and reads balance from chain/cache.
 
 ### Solana Initializer
 
@@ -436,19 +462,31 @@ require Rails.root.join("app/services/solana/keypair")
 ### Solana Routes
 
 ```ruby
-# Place BEFORE Studio.routes to avoid wildcard conflict
+# If you only need basic wallet auth, add :wallet to Studio.auth_methods and let
+# Studio.routes draw /auth/solana/nonce + /auth/solana/verify.
+#
+# Add app-specific routes that can conflict with OmniAuth wildcards BEFORE
+# Studio.routes.
 get "auth/phantom/callback", to: "solana_sessions#phantom_callback"
 
 Studio.routes(self)
+```
 
-# Solana wallet auth
+If the host needs fully custom magic-link or wallet routes, opt out before
+`Studio.configure` and draw every auth route yourself:
+
+```ruby
+# config/initializers/studio.rb
+Studio.draw_auth_routes = false
+```
+
+```ruby
+# config/routes.rb
 get  "auth/solana/nonce",  to: "solana_sessions#nonce"
 post "auth/solana/verify", to: "solana_sessions#verify"
 
 # Wallet
 resource :wallet, only: [:show] do
-  post :deposit
-  post :withdraw
   get  :sync
 end
 ```
@@ -458,8 +496,10 @@ end
 From `turf-monster/app/services/solana/`:
 - `config.rb` — env var accessors
 - `keypair.rb` — Rails extensions (admin keypair, encryption)
-- `auth_verifier.rb` — Phantom signature verification
-- `client.rb` — JSON-RPC wrapper
+
+Signature verification, RPC, transaction building, Borsh, and SPL helpers come
+from the `solana-studio` gem. Local apps should only copy app-specific wrappers
+when they truly need app behavior beyond the gem.
 
 ### JS Modules to Copy
 
@@ -491,8 +531,8 @@ material into this engine setup guide.
 ### Key Concepts
 
 - **Nonce-based auth**: Server generates nonce → client signs with Phantom → server verifies Ed25519 signature
-- **Managed wallets**: Server generates keypair on user creation, encrypts private key with `Rails.master_key`
-- **Balance**: `balance_cents` (real, withdrawable) + `promotional_cents` (bonus, used first)
-- **Seeds/Level**: On-chain progression system, 60 seeds per entry
+- **Managed wallets**: Server generates a keypair on user creation, encrypts the secret with `MANAGED_WALLET_ENCRYPTION_KEY`, and signs only the flows the app explicitly allows.
+- **Balance**: read token balances from chain/cache; avoid a parallel DB-balance source of truth.
+- **Seeds/Level**: on-chain progression system; Turf Monster's current default season schedule is `[25, 19, 14, 10, 7]`.
 
 See `turf-monster/docs/SOLANA.md` and `turf-monster/docs/AUTH.md` for full architecture.
