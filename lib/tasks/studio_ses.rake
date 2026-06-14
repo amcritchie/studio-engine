@@ -2,14 +2,39 @@
 
 unless Rake::Task.task_defined?("ses:check")
   namespace :ses do
+    def studio_ses_env_value(name)
+      value = ENV[name]
+      return nil if value.nil? || value.to_s.strip.empty?
+
+      value
+    end
+
+    def studio_ses_credential(name)
+      studio_ses_env_value("SES_#{name}") || studio_ses_env_value(name)
+    end
+
+    def studio_ses_credential_source(name)
+      return "SES_#{name}" if studio_ses_env_value("SES_#{name}")
+      return name if studio_ses_env_value(name)
+
+      "missing"
+    end
+
     def studio_ses_signer(region)
       require "aws-sigv4"
+
+      access_key_id = studio_ses_credential("AWS_ACCESS_KEY_ID")
+      secret_access_key = studio_ses_credential("AWS_SECRET_ACCESS_KEY")
+      missing = []
+      missing << "SES_AWS_ACCESS_KEY_ID or AWS_ACCESS_KEY_ID" unless access_key_id
+      missing << "SES_AWS_SECRET_ACCESS_KEY or AWS_SECRET_ACCESS_KEY" unless secret_access_key
+      abort "ses:* needs #{missing.join(' and ')}." if missing.any?
 
       Aws::Sigv4::Signer.new(
         service: "ses",
         region: region,
-        access_key_id: ENV.fetch("AWS_ACCESS_KEY_ID"),
-        secret_access_key: ENV.fetch("AWS_SECRET_ACCESS_KEY")
+        access_key_id: access_key_id,
+        secret_access_key: secret_access_key
       )
     rescue LoadError
       abort "ses:* needs aws-sigv4; it is usually available through aws-sdk-s3."
@@ -45,6 +70,7 @@ unless Rake::Task.task_defined?("ses:check")
 
       code, account = get.call("/v2/email/account")
       puts "GetAccount (region #{region}) -> HTTP #{code}"
+      puts "  CredentialSource=#{studio_ses_credential_source('AWS_ACCESS_KEY_ID')}"
       if code == 200
         puts "  SendingEnabled=#{account['SendingEnabled']} ProductionAccessEnabled=#{account['ProductionAccessEnabled']} Enforcement=#{account['EnforcementStatus']}"
       else
@@ -74,8 +100,9 @@ unless Rake::Task.task_defined?("ses:check")
       signer = studio_ses_signer(region)
       body = { EmailIdentity: domain }.to_json
       code, response = studio_ses_request(signer, region, "POST", "/v2/email/identities", body)
+      already_exists = "#{response['message']} #{response['Message']}".match?(/already exist/i)
 
-      if code == 409 || "#{response['message']}#{response['Message']}".match?(/already exists/i)
+      if code == 409 || ([400, 409].include?(code) && already_exists)
         code, response = studio_ses_request(signer, region, "GET", "/v2/email/identities/#{domain}")
       end
 

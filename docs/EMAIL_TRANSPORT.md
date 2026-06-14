@@ -47,6 +47,8 @@ SES_SMTP_USERNAME=...
 SES_SMTP_PASSWORD=...
 SES_SMTP_HOST=                 # optional, defaults from SES_REGION
 SES_SMTP_PORT=587
+SES_AWS_ACCESS_KEY_ID=...      # SES API checks only; optional fallback to AWS_ACCESS_KEY_ID
+SES_AWS_SECRET_ACCESS_KEY=...  # SES API checks only; optional fallback to AWS_SECRET_ACCESS_KEY
 RESEND_API_KEY=...             # rollback only
 MAILER_FROM=noreply@example.com
 ```
@@ -60,8 +62,14 @@ bin/rails ses:check
 bin/rails "ses:verify_domain[example.com]"
 ```
 
-The tasks use `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `SES_REGION` to
-query SES account status and print DKIM records.
+The tasks use `SES_AWS_ACCESS_KEY_ID`, `SES_AWS_SECRET_ACCESS_KEY`, and
+`SES_REGION` to query SES account status and print DKIM records. They fall back
+to `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY` only for older apps. Prefer the
+`SES_AWS_*` names in production so an app's S3/ImageCache IAM user is never
+mistaken for the SES verification user.
+
+These are SES API credentials, not runtime SMTP credentials. Runtime delivery
+still needs `SES_SMTP_USERNAME` and `SES_SMTP_PASSWORD`.
 
 ## Durable Delivery
 

@@ -37,6 +37,8 @@ The engine reads these values only through consumer apps.
 | `SES_REGION` | SES transport | Defaults by app/provider convention if absent. |
 | `SES_SMTP_USERNAME` | SES transport | From AWS SES SMTP credentials. |
 | `SES_SMTP_PASSWORD` | SES transport | Pair for `SES_SMTP_USERNAME`. |
+| `SES_AWS_ACCESS_KEY_ID` | SES helper tasks | SES-scoped IAM access key for `ses:check` and `ses:verify_domain`; keep separate from S3 `AWS_ACCESS_KEY_ID`. |
+| `SES_AWS_SECRET_ACCESS_KEY` | SES helper tasks | Pair for `SES_AWS_ACCESS_KEY_ID`; never print the value. |
 | `RESEND_API_KEY` | Resend rollback | Used only when SES is inactive or unavailable. |
 | `MAILER_FROM` | Apps that send mail | Must belong to a domain verified by the selected provider. |
 
@@ -56,6 +58,8 @@ MAIL_TRANSPORT=ses
 SES_REGION=us-east-2
 SES_SMTP_USERNAME=...
 SES_SMTP_PASSWORD=...
+SES_AWS_ACCESS_KEY_ID=...     # SES API checks only
+SES_AWS_SECRET_ACCESS_KEY=... # SES API checks only
 RESEND_API_KEY=... # rollback only
 MAILER_FROM=noreply@example.com
 ```
@@ -74,6 +78,10 @@ heroku config:set GOOGLE_CLIENT_ID=... GOOGLE_CLIENT_SECRET=... --app turf-monst
 heroku config:set MAIL_TRANSPORT=ses SES_REGION=us-east-2 --app mcritchie-studio
 heroku config:set MAIL_TRANSPORT=ses SES_REGION=us-east-2 --app turf-monster-mainnet
 ```
+
+Do not reuse an app's S3/ImageCache `AWS_ACCESS_KEY_ID` for SES verification
+unless that credential was deliberately granted SES permissions. Prefer
+`SES_AWS_ACCESS_KEY_ID` / `SES_AWS_SECRET_ACCESS_KEY` for SES helper tasks.
 
 Use McRitchie Studio's recovery scripts to hydrate local env files from Heroku
 and 1Password during a fresh-machine rebuild.

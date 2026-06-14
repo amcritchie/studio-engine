@@ -4,7 +4,14 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
-No entries yet.
+### Fixed
+- **`ses:check` / `ses:verify_domain` credential selection** now prefers
+  `SES_AWS_ACCESS_KEY_ID` / `SES_AWS_SECRET_ACCESS_KEY` before falling back to
+  generic `AWS_*` credentials, keeping SES account checks separate from
+  consumer app S3/ImageCache IAM users.
+- **`ses:verify_domain` existing identity handling** now accepts AWS SES's
+  `already exist` response wording and falls back to reading the existing
+  identity.
 
 ## v0.5.6 (2026-06-14)
 

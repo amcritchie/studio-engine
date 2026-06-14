@@ -8,12 +8,18 @@ agent session without explicit approval.
 
 ## Current Release
 
-The current prepared release is `v0.5.2`:
+The current published release used by local consumers is `v0.5.6`:
 
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.
 - `resend` is now a runtime dependency of the engine so consumers do not need
   to carry it directly after they bundle the release.
+- `Studio::Email.deliver`, local email capture, scanner-safe magic links, and
+  wallet-address adapters are available for consumers on `0.5.6`.
+
+The `Unreleased` changelog currently contains an SES helper-task fix. Publish it
+as the next patch release before relying on `SES_AWS_ACCESS_KEY_ID` /
+`SES_AWS_SECRET_ACCESS_KEY` in production.
 
 If additional engine changes are added before publish, review whether this
 should remain a patch release or move to the next minor.
@@ -46,13 +52,13 @@ The build artifact is written to `/tmp/studio-engine-release-check/`.
 6. Publish the gem only after explicit approval:
 
 ```bash
-gem push /tmp/studio-engine-release-check/studio-engine-0.5.2.gem
+gem push /tmp/studio-engine-release-check/studio-engine-<version>.gem
 ```
 
 7. Create/push the matching git tag after the gem is published:
 
 ```bash
-git tag v0.5.2
+git tag v<version>
 git push origin main --tags
 ```
 
