@@ -4,6 +4,14 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.5.8 (2026-06-14)
+
+### Added
+- **`StudioEmailDeliveryHelper#email_delivery_banner_status`** — shared
+  non-production banner status text for whether the current process sends
+  external email and which transport is active (`resend`, `ses`, `capture`, or
+  the ActionMailer delivery method).
+
 ## v0.5.7 (2026-06-14)
 
 ### Added

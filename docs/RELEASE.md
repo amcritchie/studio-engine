@@ -8,7 +8,7 @@ agent session without explicit approval.
 
 ## Current Release
 
-The current published release used by local consumers is `v0.5.7`:
+The current published release used by local consumers is `v0.5.8`:
 
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.
@@ -16,10 +16,8 @@ The current published release used by local consumers is `v0.5.7`:
   to carry it directly after they bundle the release.
 - `Studio::Email.deliver`, local email capture, scanner-safe magic links, and
   wallet-address adapters are available for consumers on `0.5.6`.
-
-The `Unreleased` changelog currently contains an SES helper-task fix. Publish it
-as the next patch release before relying on `SES_AWS_ACCESS_KEY_ID` /
-`SES_AWS_SECRET_ACCESS_KEY` in production.
+- `StudioEmailDeliveryHelper#email_delivery_banner_status` provides shared
+  non-production mail-state banner text for consumers on `0.5.8`.
 
 If additional engine changes are added before publish, review whether this
 should remain a patch release or move to the next minor.
