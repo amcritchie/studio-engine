@@ -27,7 +27,10 @@ echo "Studio Engine: $(ruby -Ilib -e 'require "studio/version"; print Studio::VE
 for file in \
   lib/studio.rb \
   lib/studio/engine.rb \
+  lib/studio/email.rb \
   lib/studio/mail_transport.rb \
+  app/models/studio/email_delivery.rb \
+  app/jobs/studio/email_delivery_job.rb \
   lib/tasks/studio_ses.rake \
   studio-engine.gemspec
 do
@@ -38,6 +41,7 @@ for test_file in \
   test/lib/studio_test.rb \
   test/lib/studio/color_scale_test.rb \
   test/lib/studio/theme_resolver_test.rb \
+  test/lib/studio/email_test.rb \
   test/lib/studio/mail_transport_test.rb
 do
   ruby -Itest "$test_file"

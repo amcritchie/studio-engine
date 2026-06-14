@@ -4,6 +4,15 @@
 apps. It keeps McRitchie Studio, Turf Monster, and future apps on one
 ActionMailer transport contract.
 
+`Studio::Email.deliver(...)` is the shared delivery entry point. It records a
+durable outbox row before enqueueing delivery when the host app has either:
+
+- an existing app-level `EmailDelivery` model, or
+- the engine-provided `Studio::EmailDelivery` table installed.
+
+If no durable adapter is available, it falls back to normal ActionMailer
+`deliver_later` so apps can adopt the API before installing the outbox table.
+
 ## App Initializer
 
 ```ruby
@@ -49,3 +58,23 @@ bin/rails "ses:verify_domain[example.com]"
 
 The tasks use `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `SES_REGION` to
 query SES account status and print DKIM records.
+
+## Durable Delivery
+
+New apps should install the engine migration before relying on durable delivery:
+
+```bash
+bin/rails railties:install:migrations
+bin/rails db:migrate
+```
+
+The table is `studio_email_deliveries`; the model is `Studio::EmailDelivery`.
+Use the facade from app code:
+
+```ruby
+Studio::Email.deliver(UserMailer, :magic_link, email, token, to: email, user: user)
+```
+
+`Studio::EmailDelivery.resend_unsent!` re-enqueues any unsent rows after a
+provider or worker outage. Apps with an older top-level `EmailDelivery` model can
+keep it during migration; `Studio::Email.deliver` will use that adapter first.

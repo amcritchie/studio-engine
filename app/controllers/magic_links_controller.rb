@@ -22,7 +22,7 @@ class MagicLinksController < ApplicationController
     email = params[:email].to_s.strip.downcase
     if email.match?(URI::MailTo::EMAIL_REGEXP)
       token = MagicLink.generate(email: email, return_to: safe_path(params[:return_to]))
-      UserMailer.magic_link(email, token).deliver_later
+      Studio::Email.deliver(UserMailer, :magic_link, email, token, to: email)
     end
     respond_to do |format|
       format.json { render json: { success: true } }

@@ -5,6 +5,7 @@ require "studio/theme_resolver"
 require "studio/username_generator"
 require "studio/s3"
 require "studio/image_cache"
+require "studio/email"
 require "studio/mail_transport"
 
 module Studio

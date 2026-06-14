@@ -6,6 +6,16 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 No entries yet.
 
+## v0.5.3 (2026-06-14)
+
+### Added
+- **`Studio::Email.deliver`** — shared ActionMailer delivery entry point that uses an app-level `EmailDelivery` when present, the engine's namespaced durable outbox when installed, and raw `deliver_later` as a fallback.
+- **`Studio::EmailDelivery` / `Studio::EmailDeliveryJob`** — namespaced durable delivery rows for apps that want shared audit, retry, and resend recovery without colliding with an existing top-level `EmailDelivery` model.
+- **`studio_email_deliveries` migration template** — installable shared outbox table for new or migrating consumer apps.
+
+### Changed
+- Engine magic-link and passwordless signup controllers now send through `Studio::Email.deliver` instead of calling `deliver_later` directly.
+
 ## v0.5.2 (2026-06-13)
 
 ### Added

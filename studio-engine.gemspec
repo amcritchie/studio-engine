@@ -18,7 +18,7 @@ Gem::Specification.new do |spec|
     "changelog_uri"   => "https://github.com/amcritchie/studio-engine/blob/main/CHANGELOG.md"
   }
 
-  spec.files = Dir["lib/**/*", "app/**/*", "config/**/*", "tailwind/**/*", "Gemfile", "studio-engine.gemspec", "README.md", "CHANGELOG.md", "LICENSE"]
+  spec.files = Dir["lib/**/*", "app/**/*", "config/**/*", "db/**/*", "tailwind/**/*", "Gemfile", "studio-engine.gemspec", "README.md", "CHANGELOG.md", "LICENSE"]
   spec.require_paths = ["lib"]
 
   spec.add_dependency "rails", ">= 7.0", "< 8.0"
