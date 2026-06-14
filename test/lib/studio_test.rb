@@ -9,6 +9,7 @@ class StudioTest < Minitest::Test
     Studio.session_key         = :user_id
     Studio.registration_params = [:name, :email, :password, :password_confirmation]
     Studio.sso_logo            = nil
+    Studio.wallet_address_method = nil
     Studio.theme_logos         = []
     Studio.theme_primary       = "#8E82FE"
     Studio.theme_dark          = "#1A1535"
@@ -72,6 +73,10 @@ class StudioTest < Minitest::Test
 
   def test_default_sso_logo
     assert_nil Studio.sso_logo
+  end
+
+  def test_default_wallet_address_method
+    assert_nil Studio.wallet_address_method
   end
 
   def test_default_theme_logos
@@ -143,6 +148,30 @@ class StudioTest < Minitest::Test
   ensure
     ENV.delete("AGENT_WORKTREE")
     Studio.local_email_capture = nil
+  end
+
+  def test_user_wallet_address_uses_wallet_address_by_default
+    user = Struct.new(:wallet_address).new("Wallet111")
+    assert_equal "Wallet111", Studio.user_wallet_address(user)
+  end
+
+  def test_user_wallet_address_falls_back_to_solana_address
+    user = Struct.new(:solana_address).new("Solana111")
+    assert_equal "Solana111", Studio.user_wallet_address(user)
+  end
+
+  def test_user_wallet_address_uses_configured_method_first
+    user = Struct.new(:wallet_address, :custom_wallet).new("Wallet111", "Custom111")
+    Studio.wallet_address_method = :custom_wallet
+
+    assert_equal "Custom111", Studio.user_wallet_address(user)
+  ensure
+    Studio.wallet_address_method = nil
+  end
+
+  def test_user_wallet_address_skips_blank_values
+    user = Struct.new(:wallet_address, :solana_address).new("", "Solana111")
+    assert_equal "Solana111", Studio.user_wallet_address(user)
   end
 
   # ── theme_config ────────────────────────────────────────────

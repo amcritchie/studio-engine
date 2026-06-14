@@ -99,6 +99,9 @@ Studio.configure do |config|
   config.magic_link_token_name = "magic_link_x_app_v1"
   config.mailer_from = ENV.fetch("MAILER_FROM", "noreply@example.com")
   config.configure_sso_user = ->(user) { user.role = "viewer" }
+  # Optional: defaults check wallet_address, then solana_address.
+  # Set this if your User exposes a different wallet column/helper.
+  # config.wallet_address_method = :solana_address
   config.theme_logos = [
     { file: "favicon.png", title: "Favicon" },
     { file: "logo.png",    title: "Navbar Logo" },
@@ -527,6 +530,17 @@ material into this engine setup guide.
 |------|--------|-----------|----------|
 | Managed | `web2_solana_address` | Server (keypair in DB) | Users who don't have Phantom |
 | Phantom | `web3_solana_address` | User's browser extension | Web3 native users |
+
+Expose one wallet helper for shared session/SSO awareness:
+
+```ruby
+def solana_address
+  web3_solana_address || web2_solana_address
+end
+```
+
+Then set `config.wallet_address_method = :solana_address`, or rely on the
+engine default fallback when the method is named `solana_address`.
 
 ### Key Concepts
 

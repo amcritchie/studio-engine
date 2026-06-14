@@ -6,6 +6,13 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 No entries yet.
 
+## v0.5.6 (2026-06-14)
+
+### Added
+- **`Studio.wallet_address_method` / `Studio.user_wallet_address(user)`** —
+  shared wallet-address adapter for SSO/session awareness. Defaults support
+  `wallet_address` and `solana_address`; apps can configure another method.
+
 ## v0.5.5 (2026-06-14)
 
 ### Added

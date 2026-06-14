@@ -49,7 +49,7 @@ module Studio
         session[:sso_name]     = user.try(:name)
         session[:sso_provider] = user.provider
         session[:sso_uid]      = user.uid
-        session[:sso_wallet]   = user.try(:wallet_address)
+        session[:sso_wallet]   = Studio.user_wallet_address(user)
         session[:sso_source]   = Studio.app_name
         session[:sso_logo]     = Studio.sso_logo
       end

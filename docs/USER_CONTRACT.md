@@ -38,7 +38,7 @@ The engine accesses these via `try:` or only inside config procs you write. They
 | `#name` | `set_app_session` (via `try(:name)`) | If present, populates `session[:sso_name]`. |
 | `#provider` | `set_app_session` | OAuth provider string (e.g. `"google"`). |
 | `#uid` | `set_app_session` | OAuth provider UID. |
-| `#wallet_address` | `set_app_session` (via `try(:wallet_address)`) | For wallet-auth apps (turf-monster). |
+| `#wallet_address` or `#solana_address` | `Studio.user_wallet_address`, `set_app_session`, `SessionContext#address` | For wallet-auth apps. Override with `Studio.wallet_address_method = :your_method` if the app uses another helper. |
 | `#role=` | `configure_sso_user` proc in host app | Only required if the host's `Studio.configure_sso_user` proc sets `user.role = ...`. |
 | `#balance_cents=` | `configure_sso_user` proc | Same — only if the host proc uses it. |
 

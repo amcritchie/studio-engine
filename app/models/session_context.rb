@@ -63,6 +63,8 @@ class SessionContext
 
   # Primary wallet address (web3 preferred), or nil when logged out / wallet-less.
   def address
+    return Studio.user_wallet_address(user) if defined?(Studio) && Studio.respond_to?(:user_wallet_address)
+
     return nil unless user.respond_to?(:solana_address)
     user.solana_address
   end

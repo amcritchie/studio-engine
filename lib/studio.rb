@@ -16,6 +16,7 @@ module Studio
   mattr_accessor :configure_new_user,  default: ->(user) {}
   mattr_accessor :configure_sso_user,  default: ->(user) {}
   mattr_accessor :sso_logo,            default: nil
+  mattr_accessor :wallet_address_method, default: nil
   mattr_accessor :theme_logos,         default: []
 
   # ---- Authentication ------------------------------------------------------
@@ -97,6 +98,19 @@ module Studio
     return !!local_email_capture unless local_email_capture.nil?
 
     env_truthy?(ENV["LOCAL_EMAIL_CAPTURE"]) || env_truthy?(ENV["AGENT_WORKTREE"])
+  end
+
+  def self.user_wallet_address(user)
+    return nil unless user
+
+    [wallet_address_method, :wallet_address, :solana_address].compact.each do |method|
+      next unless user.respond_to?(method)
+
+      value = user.public_send(method)
+      return value if value && !(value.respond_to?(:empty?) && value.empty?)
+    end
+
+    nil
   end
 
   # Verifies that the host app's User model satisfies the engine's expected
