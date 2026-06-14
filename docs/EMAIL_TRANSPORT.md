@@ -4,6 +4,10 @@
 apps. It keeps McRitchie Studio, Turf Monster, and future apps on one
 ActionMailer transport contract.
 
+Cross-app sender inventory, SES rollout policy, local inbox proof rules, and
+rollback/decommission criteria live in
+`mcritchie-studio/docs/agents/modules/email-operations.md`.
+
 `Studio::Email.deliver(...)` is the shared delivery entry point. It records a
 durable outbox row before enqueueing delivery when the host app has either:
 
