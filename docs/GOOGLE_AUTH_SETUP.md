@@ -54,23 +54,33 @@ OmniAuth.config.allowed_request_methods = [:post, :get]
 
 ### 3. Add `from_omniauth` to User model
 
+Passwordless apps should not create throwaway passwords for Google users. The
+engine passes `email_verified:` after server-side tokeninfo validation, so use
+that signal when linking Google to an existing email account.
+
 ```ruby
-def self.from_omniauth(auth)
+def self.from_omniauth(auth, email_verified: false)
   user = find_by(provider: auth.provider, uid: auth.uid)
   return user if user
 
-  user = find_by(email: auth.info.email)
-  if user
-    user.update!(provider: auth.provider, uid: auth.uid)
-    return user
+  email = auth.info.email
+  if email.present? && (existing = find_by(email: email))
+    return :email_not_verified unless email_verified
+
+    existing.update!(
+      provider: auth.provider,
+      uid: auth.uid,
+      email_verified_at: existing.email_verified_at || Time.current
+    )
+    return existing
   end
 
   create!(
-    email: auth.info.email,
+    email: email,
     name: auth.info.name,
     provider: auth.provider,
     uid: auth.uid,
-    password: SecureRandom.hex(16)
+    email_verified_at: email_verified ? Time.current : nil
   )
 rescue ActiveRecord::RecordNotUnique
   find_by(email: auth.info.email) || find_by(provider: auth.provider, uid: auth.uid)
@@ -83,6 +93,7 @@ end
 # Migration
 add_column :users, :provider, :string
 add_column :users, :uid, :string
+add_column :users, :email_verified_at, :datetime
 ```
 
 ### 5. Add redirect URI in Google Cloud Console

@@ -57,7 +57,6 @@ The engine doesn't care about DB shape directly, but in practice every consumer 
 ```ruby
 class User < ApplicationRecord
   include Sluggable                  # from the engine
-  has_secure_password validations: false
   has_many :error_logs, as: :target  # if you want to associate logged errors
 
   def admin?
@@ -72,16 +71,32 @@ class User < ApplicationRecord
     (name.presence || email.to_s.split("@").first).parameterize
   end
 
-  def self.from_omniauth(auth)
-    find_or_create_by(provider: auth["provider"], uid: auth["uid"]) do |user|
-      user.email = auth.dig("info", "email")
-      user.name  = auth.dig("info", "name")
+  def self.from_omniauth(auth, email_verified: false)
+    user = find_by(provider: auth["provider"], uid: auth["uid"])
+    return user if user
+
+    email = auth.dig("info", "email")
+    if email.present? && (existing = find_by(email: email))
+      return :email_not_verified unless email_verified
+
+      existing.update!(provider: auth["provider"], uid: auth["uid"])
+      return existing
     end
+
+    create!(
+      email: email,
+      name: auth.dig("info", "name"),
+      provider: auth["provider"],
+      uid: auth["uid"]
+    )
   rescue ActiveRecord::RecordNotUnique
-    find_by(provider: auth["provider"], uid: auth["uid"])
+    find_by(email: email) || find_by(provider: auth["provider"], uid: auth["uid"])
   end
 end
 ```
+
+Only add `has_secure_password validations: false` when the host app deliberately
+enables `Studio.auth_methods << :password` and has a `password_digest` column.
 
 ## Why this exists
 
