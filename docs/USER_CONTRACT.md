@@ -15,10 +15,14 @@ These are the methods/attributes the engine actively calls. Missing one of these
 ### Instance methods
 | Name | Used by | Notes |
 |------|---------|-------|
-| `#authenticate(password)` | `SessionsController#create` | Provided by `has_secure_password`. Returns the user on success, falsy on failure. |
 | `#admin?` | `require_admin`, several admin views | Boolean. Implement however your app wants (role enum, explicit column, etc.). |
 | `#email` | `set_app_session`, SSO awareness | String. May be nil for wallet-only users — but then SSO is not available for them. |
 | `#display_name` | `welcome_message` default proc, flash messages | String. Pure convenience helper — implement as `name.presence \|\| email.split('@').first`. |
+
+### Instance methods — only if you enable password auth
+| Name | Used by | Notes |
+|------|---------|-------|
+| `#authenticate(password)` | `SessionsController#create` | Provided by `has_secure_password`. Only required when `Studio.auth_methods` includes `:password`. |
 
 ### Class method — only if you enable Google OAuth
 | Name | Used by | Notes |
@@ -43,7 +47,7 @@ The engine accesses these via `try:` or only inside config procs you write. They
 The engine doesn't care about DB shape directly, but in practice every consumer ships:
 - `name:string`
 - `email:string` (unique-indexed, nullable for wallet-only apps)
-- `password_digest:string` (for `has_secure_password`)
+- `password_digest:string` only when enabling password auth
 - `provider:string`, `uid:string` (OmniAuth)
 - `role:string` or `role:integer` (for `admin?`)
 - `slug:string` (for `Sluggable`-friendly URLs)

@@ -1,6 +1,22 @@
 # Changelog
 
-The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Both consumer Rails apps pin to a tag in their `Gemfile`; bumping the tag is a release.
+The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.5"`; bumping the gem version and updating consumer lockfiles is a release.
+
+## Unreleased
+
+No entries yet.
+
+## v0.5.2 (2026-06-13)
+
+### Added
+- **`Studio::MailTransport`** — shared ActionMailer transport selection for SES SMTP primary and Resend rollback.
+- **`ses:check` / `ses:verify_domain`** — shared Rake tasks for SES credential and domain verification checks.
+- **`bin/release-check`** — local preflight for Ruby syntax, engine unit tests, and optional gem packaging.
+
+### Changed
+- Engine release docs now describe the RubyGems flow and consumer lockfile adoption instead of the legacy git tag pinning flow.
+- Runtime dependency ranges are now bounded for cleaner RubyGems releases while preserving the current Rails 7 / Solid Queue 1.x app stack.
+- `resend` is declared as an engine runtime dependency so consumer apps can drop direct rollback dependencies after they bundle the release that includes `Studio::MailTransport`.
 
 ## v0.5.1 (2026-06-02)
 

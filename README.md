@@ -1,6 +1,6 @@
 # Studio Engine
 
-Shared Rails engine for McRitchie apps. Provides authentication, error handling, dynamic theming, and common concerns used by [McRitchie Studio](https://app.mcritchie.studio) and [Turf Monster](https://turf.mcritchie.studio).
+Shared Rails engine for McRitchie apps. Provides authentication, error handling, dynamic theming, and common concerns used by [McRitchie Studio](https://app.mcritchie.studio) and [Turf Monster](https://app.turfmonster.media).
 
 > **Part of the McRitchie ecosystem** — see [`ECOSYSTEM.md`](https://github.com/amcritchie/mcritchie-studio/blob/main/docs/ECOSYSTEM.md) for the 5-repo map; [`house-burn-down.md`](https://github.com/amcritchie/mcritchie-studio/blob/main/docs/agents/system/house-burn-down.md) for fresh-Mac recovery.
 
@@ -8,16 +8,16 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 
 ```ruby
 # Gemfile — install from RubyGems (recommended)
-gem "studio-engine", "~> 0.4.0"
+gem "studio-engine", "~> 0.5"
 ```
 
-Then `bundle install`. The current release is **v0.4.10**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.5.2**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
-> Published to RubyGems as of v0.4.0 (2026-05-17). Earlier consumers used a `git:` ref pinned to a tag; that pattern is preserved here for reference but new installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`, `tax-studio`) already use.
+> Published to RubyGems as of v0.4.0 (2026-05-17). New installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`) already use.
 
 ## What It Provides
 
-- **Authentication**: Session-based login/signup controllers and views, Google OAuth via OmniAuth, one-way SSO (hub to satellite)
+- **Authentication**: Passwordless magic-link auth, optional password auth, Google OAuth via OmniAuth, Solana wallet sign-in, and optional one-way SSO patterns
 - **Error handling**: `Studio::ErrorHandling` concern with `rescue_and_log`, `ErrorLog` model with `capture!`, error log viewer at `/error_logs`
 - **Theme system**: Dynamic CSS custom properties generated from 7 role colors (primary, dark, light, success, accent, warning, danger). Dark/light mode toggle. Admin theme editor at `/admin/theme`.
 - **Sluggable concern**: `before_save :set_slug` with `to_param` for human-readable URLs
@@ -31,13 +31,25 @@ Each consuming app configures the engine in `config/initializers/studio.rb`:
 Studio.configure do |config|
   config.app_name = "My App"
   config.session_key = :my_app_user_id
-  config.sso_logo = "/logo.svg"
   config.welcome_message = ->(user) { "Welcome, #{user.display_name}!" }
-  config.registration_params = [:name, :email, :password, :password_confirmation]
+  config.auth_methods = %i[magic_link google]
+  config.registration_params = [:name, :email]
+  config.magic_link_token_name = "magic_link_my_app_v1"
+  config.mailer_from = ENV.fetch("MAILER_FROM", "noreply@example.com")
   config.theme_primary = "#4BAF50"   # Override default violet
   config.theme_logos = ["logo.svg"]
 end
 ```
+
+Transactional mail transport is shared through `Studio::MailTransport`:
+
+```ruby
+# config/initializers/studio_mail_transport.rb
+Studio::MailTransport.configure!
+```
+
+It selects SES SMTP when `MAIL_TRANSPORT=ses` and SES SMTP credentials are
+present, otherwise falls back to Resend when `RESEND_API_KEY` is present.
 
 ## Routes
 
@@ -50,7 +62,7 @@ Rails.application.routes.draw do
 end
 ```
 
-This draws: `/login`, `/signup`, `/logout`, `/sso_continue`, `/sso_login`, `/auth/:provider/callback`, `/auth/failure`, `/error_logs`, `/admin/theme` (GET, PATCH), `/admin/theme/regenerate`.
+This draws the enabled auth routes (`/login`, `/signup`, `/logout`, magic-link routes, Solana routes), OAuth callbacks, optional SSO routes, `/error_logs`, and `/admin/theme`.
 
 ## Overriding Views
 
@@ -58,19 +70,20 @@ This is a non-isolated engine -- app views at the same path automatically overri
 
 ## Releasing
 
-Engine releases are git tags (semver: `MAJOR.MINOR.PATCH`). Both consumer apps pin to a tag in their Gemfile — bumping the tag is the release.
+Engine releases use semantic versions and are published to RubyGems. The full
+operator checklist lives in [`docs/RELEASE.md`](./docs/RELEASE.md).
 
-1. Make + commit changes on `main`.
-2. Update [`CHANGELOG.md`](./CHANGELOG.md) with the new version + a `### Added` / `### Changed` / `### Removed` summary. Keep entries terse.
-3. Bump `lib/studio/version.rb` to match.
-4. Commit the version bump + CHANGELOG together (`v0.X.Y: <summary>`).
-5. Tag: `git tag -a v0.X.Y -m "<one-line summary>"`.
-6. Push: `git push origin main --tags`.
-7. In each consumer app's Gemfile, update the `tag:` field. Commit + push.
-8. On consumer prod: `bundle install` runs as part of the deploy buildpack.
+Short form:
+
+1. Update [`CHANGELOG.md`](./CHANGELOG.md) and `lib/studio/version.rb`.
+2. Run `bin/release-check --build`.
+3. Publish the gem only after explicit approval.
+4. Tag the release after RubyGems accepts the gem.
+5. In each consumer app, run `bundle update studio-engine`, verify the lockfile,
+   and run app smoke checks.
 
 **Semver guide**
-- **PATCH**: bug fix; no API change. Consumers can bump tag with zero diff elsewhere.
+- **PATCH**: bug fix; no API change. Consumers can update the gem with zero diff elsewhere.
 - **MINOR**: backward-compatible feature add. Consumers may opt in to new APIs.
 - **MAJOR**: breaking change. Consumers will need code changes alongside the tag bump.
 
@@ -83,11 +96,11 @@ When iterating on engine code from a consumer app, point bundler at the local pa
 bundle config set --local local.studio /Users/alex/projects/studio-engine
 bundle install
 # ... iterate in both repos ...
-bundle config unset --local local.studio  # restore tag-pinned resolution
+bundle config unset --local local.studio  # restore RubyGems resolution
 ```
 
-Note: `bundle config local.studio` requires `branch:` in the Gemfile entry. If you frequently develop locally, change the Gemfile to `gem "studio-engine", git: "...", branch: "main"` during dev and back to `tag:` before merging.
+For short local experiments, temporarily point a consumer Gemfile at `path: "../studio-engine"` and restore the RubyGems dependency before merging.
 
 ## Development Notes
 
-See [CLAUDE.md](./CLAUDE.md) for detailed development context including the theme architecture, SSO protocol, color scale system, and code conventions.
+See [CLAUDE.md](./CLAUDE.md) only as legacy migration context while neutral agent docs are being extracted. Current cross-repo setup, ports, credentials, and workflow guidance live in McRitchie Studio's [`docs/agents/`](https://github.com/amcritchie/mcritchie-studio/tree/main/docs/agents).

@@ -13,7 +13,7 @@ Gem::Specification.new do |spec|
 
   spec.metadata = {
     "homepage_uri"    => "https://github.com/amcritchie/studio-engine",
-    "source_code_uri" => "https://github.com/amcritchie/studio-engine",
+    "source_code_uri" => "https://github.com/amcritchie/studio-engine/tree/main",
     "bug_tracker_uri" => "https://github.com/amcritchie/studio-engine/issues",
     "changelog_uri"   => "https://github.com/amcritchie/studio-engine/blob/main/CHANGELOG.md"
   }
@@ -21,10 +21,11 @@ Gem::Specification.new do |spec|
   spec.files = Dir["lib/**/*", "app/**/*", "config/**/*", "tailwind/**/*", "Gemfile", "studio-engine.gemspec", "README.md", "CHANGELOG.md", "LICENSE"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails", ">= 7.0"
+  spec.add_dependency "rails", ">= 7.0", "< 8.0"
   spec.add_dependency "tailwindcss-rails", "~> 2.7"
-  spec.add_dependency "faker", ">= 2.0"
-  spec.add_dependency "solid_queue"
+  spec.add_dependency "faker", ">= 2.0", "< 4.0"
+  spec.add_dependency "solid_queue", ">= 1.0", "< 2.0"
   spec.add_dependency "aws-sdk-s3", "~> 1.218"
   spec.add_dependency "mini_magick", "~> 5.0"
+  spec.add_dependency "resend", "~> 1.1"
 end

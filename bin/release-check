@@ -1,0 +1,60 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+cd "$ROOT"
+
+if [ -d /opt/homebrew/opt/ruby@3.1/bin ]; then
+  export PATH="/opt/homebrew/opt/ruby@3.1/bin:/opt/homebrew/lib/ruby/gems/3.1.0/bin:$PATH"
+fi
+
+build=0
+case "${1:-}" in
+  "")
+    ;;
+  "--build")
+    build=1
+    ;;
+  *)
+    echo "Usage: bin/release-check [--build]" >&2
+    exit 64
+    ;;
+esac
+
+echo "Ruby: $(ruby -v)"
+echo "Studio Engine: $(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"
+
+for file in \
+  lib/studio.rb \
+  lib/studio/engine.rb \
+  lib/studio/mail_transport.rb \
+  lib/tasks/studio_ses.rake \
+  studio-engine.gemspec
+do
+  ruby -c "$file"
+done
+
+for test_file in \
+  test/lib/studio_test.rb \
+  test/lib/studio/color_scale_test.rb \
+  test/lib/studio/theme_resolver_test.rb \
+  test/lib/studio/mail_transport_test.rb
+do
+  ruby -Itest "$test_file"
+done
+
+if [ "$build" -eq 1 ]; then
+  version="$(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"
+  output_dir="/tmp/studio-engine-release-check"
+  output="$output_dir/studio-engine-${version}.gem"
+
+  mkdir -p "$output_dir"
+  rm -f "$output"
+  gem build studio-engine.gemspec --output "$output"
+  gem specification "$output" name
+  gem specification "$output" version
+  gem specification "$output" dependencies
+  echo "Built $output"
+fi
+
+echo "Release check complete."

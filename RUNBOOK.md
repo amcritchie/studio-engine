@@ -5,12 +5,12 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 ## Consuming App Won't Load Engine
 
 **`Bundler::GemNotFound` for studio**
-- Diagnosis: Gemfile points to GitHub but bundle can't fetch. Network issue or repo is private.
-- Fix: Test connectivity: `git ls-remote https://github.com/amcritchie/studio-engine.git`. If it fails, check GitHub status and SSH/HTTPS auth. In the consuming app: `bundle install --verbose`.
+- Diagnosis: Gemfile expects `studio-engine` from RubyGems but Bundler cannot resolve it. Network, RubyGems, or lockfile issue.
+- Fix: Check `gem "studio-engine", "~> 0.5"` is in the consuming app's Gemfile. Run `bundle install --verbose`. If a just-published release is missing, confirm RubyGems shows it before retrying.
 
 **Engine classes not available (NameError)**
 - Diagnosis: `ErrorLog`, `Sluggable`, or `Studio::ErrorHandling` not found. Engine not loaded.
-- Fix: Verify `gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
+- Fix: Verify `gem "studio-engine", "~> 0.5"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
 
 **`Studio` constant undefined at boot**
 - Diagnosis: Initializer runs before engine loads.
@@ -72,17 +72,17 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 
 **Standard update flow**
 1. Make changes in `/Users/alex/projects/studio-engine/`
-2. Run engine tests: `cd /Users/alex/projects/mcritchie-studio && bin/rails test` (runs from a consuming app — engine has no standalone harness)
-3. Commit and push: `git add -A && git commit -m "description" && git push`
+2. Run `bin/release-check`
+3. Follow `docs/RELEASE.md` for version bump, changelog, build, and approved RubyGems publish
 4. In McRitchie Studio: `cd /Users/alex/projects/mcritchie-studio && bundle update studio-engine`
 5. In Turf Monster: `cd /Users/alex/projects/turf-monster && bundle update studio-engine`
-6. Test both apps: `bin/rails test` in each
-7. Deploy both if all tests pass
+6. Test both apps and prove the local URLs still boot
+7. Deploy consumers after app-level verification passes
 
 **Consumer locked to old version**
-- Diagnosis: `bundle update studio-engine` doesn't pull the latest. Bundler may be caching the old ref.
-- Fix: `rm -rf vendor/cache/studio-*` in the consuming app, then `bundle update studio-engine`. Check `Gemfile.lock` to verify the new revision.
+- Diagnosis: `bundle update studio-engine` does not pull the latest published version.
+- Fix: Confirm RubyGems has the target version. Check `Gemfile.lock` for the resolved version, then retry `bundle update studio-engine`. If the app has a local Bundler override, clear it with `bundle config unset --local local.studio`.
 
 **Engine test approach**
-- Diagnosis: The engine has no standalone test harness. Tests run inside consuming apps.
-- Fix: Engine unit tests (ColorScale, ThemeResolver) live in consuming app test suites. To test engine changes: make the change, `bundle update studio-engine` in a consuming app, run `bin/rails test` there. Critical test targets: `Studio::ColorScale`, `Studio::ThemeResolver`, `ErrorLog.capture!`, `Sluggable`.
+- Diagnosis: Some engine behavior is pure Ruby and some only proves out inside a consuming Rails app.
+- Fix: Run `bin/release-check` for engine unit coverage. Then bundle the released version into consumers and run app-specific smoke checks for controllers, routes, mailers, views, and local URLs.

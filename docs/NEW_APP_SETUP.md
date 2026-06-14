@@ -13,24 +13,25 @@ rails new x_app --database=postgresql
 cd x_app
 ```
 
-Pick the next available port (see port assignments in top-level CLAUDE.md):
-- 3000 = McRitchie Studio
-- 3001 = Turf Monster
-- 3002 = Boodle Scraper
-- 3003 = Tax Studio
-- 3004 = next app
+Pick the next available app range in McRitchie Studio's port registry (`mcritchie-studio/docs/agents/modules/ports-and-processes.md`):
+
+- 3000-3099 = McRitchie Studio
+- 3100-3199 = Turf Monster
+- 3200-3299 = next app range
+
+Use the first port in the range as the primary callback-ready server. Reserve the rest for worktrees and parallel test stacks.
 
 ## 2. Gemfile
 
 ```ruby
 # Studio engine
-gem "studio-engine", git: "https://github.com/amcritchie/studio-engine.git"
+gem "studio-engine", "~> 0.5"
 
 # CSS
 gem "tailwindcss-rails", "~> 2.7"
 
-# Password hashing
-gem "bcrypt", "~> 3.1.7"
+# Password hashing (only if enabling Studio.auth_methods :password)
+# gem "bcrypt", "~> 3.1.7"
 
 # Environment variables
 gem "dotenv-rails", groups: [:development, :test]
@@ -92,7 +93,10 @@ Studio.configure do |config|
   config.app_name = "X App"
   config.session_key = :x_app_user_id          # unique per app
   config.welcome_message = ->(user) { "Welcome to X App, #{user.display_name}!" }
-  config.registration_params = [:name, :email, :password, :password_confirmation]
+  config.auth_methods = %i[magic_link google]  # add :wallet or :password only when needed
+  config.registration_params = [:name, :email]
+  config.magic_link_token_name = "magic_link_x_app_v1"
+  config.mailer_from = ENV.fetch("MAILER_FROM", "noreply@example.com")
   config.configure_sso_user = ->(user) { user.role = "viewer" }
   config.theme_logos = [
     { file: "favicon.png", title: "Favicon" },
@@ -103,15 +107,27 @@ Studio.configure do |config|
 end
 ```
 
+### `config/initializers/studio_mail_transport.rb`
+
+```ruby
+Studio::MailTransport.configure!
+```
+
+This shared transport selects SES SMTP when `MAIL_TRANSPORT=ses` and
+`SES_SMTP_USERNAME` / `SES_SMTP_PASSWORD` are present. Resend remains the
+rollback path when `RESEND_API_KEY` is present and SES is not active.
+
 ### `config/initializers/session_store.rb`
 
 ```ruby
 Rails.application.config.session_store :cookie_store,
-  key: "_studio_session",
-  domain: (Rails.env.production? ? ".mcritchie.studio" : :all)
+  key: "_x_app_session",
+  secure: Rails.env.production?,
+  httponly: true,
+  same_site: :lax
 ```
 
-**Critical**: Cookie key must be `_studio_session` and same `SECRET_KEY_BASE` across all apps for SSO.
+Use an app-specific cookie key by default. Shared-domain SSO is optional and should be enabled only after the hub/satellite cookie contract is deliberately reviewed.
 
 ### `config/initializers/omniauth.rb`
 
@@ -209,7 +225,7 @@ bin/rails db:create db:migrate
 
 ```ruby
 class User < ApplicationRecord
-  has_secure_password
+  has_secure_password validations: false  # only needed when :password auth is enabled
   include Sluggable
 
   def name_slug
@@ -239,7 +255,7 @@ class User < ApplicationRecord
       name: auth.info.name,
       provider: auth.provider,
       uid: auth.uid,
-      password: SecureRandom.hex(16)
+      password: SecureRandom.hex(16) if respond_to?(:password=)
     )
   rescue ActiveRecord::RecordNotUnique
     find_by(email: auth.info.email) || find_by(provider: auth.provider, uid: auth.uid)
@@ -315,7 +331,7 @@ Copy from the engine base and add your nav links to the desktop `<nav>` and mobi
 Place in `public/`:
 - `favicon.png` — browser tab icon
 - `logo.png` — navbar + auth page logo
-- `studio-logo.svg` — copy from McRitchie Studio for SSO button branding
+- `studio-logo.svg` — optional, only if the app participates in one-way SSO
 
 ## 11. Seeds
 
@@ -323,7 +339,6 @@ Place in `public/`:
 # db/seeds.rb
 admin = User.find_or_create_by!(email: "alex@mcritchie.studio") do |u|
   u.name = "Alex McRitchie"
-  u.password = "password"
   u.role = "admin"
 end
 puts "Seeded admin: #{admin.email}"
@@ -365,7 +380,7 @@ Add button classes (`.btn`, `.btn-primary`, etc.) — copy from Tax Studio or Tu
 
 ## 14. Hub Link (McRitchie Studio)
 
-Add a nav link in McRitchie Studio pointing to your app's `/sso_login` for one-click SSO.
+Add a nav link in McRitchie Studio only after the app is registered in `mcritchie-studio/config/satellites.yml`. If the app participates in one-way SSO, point the link at `/sso_login`; otherwise point at the app root or a public landing page.
 
 ## 15. Verify
 
@@ -376,14 +391,14 @@ bin/rails server -p {PORT}
 - [ ] Homepage loads with navbar, logo, brand title
 - [ ] Dev banner shows yellow "Development Environment" bar with DEV MODE toggle
 - [ ] Dark/light mode toggle works
-- [ ] `/login` shows logo + SSO + email/password + Google
-- [ ] `/signup` shows logo + form + Google
-- [ ] Login with email/password works
+- [ ] `/login` shows logo + enabled auth methods
+- [ ] `/signup` shows logo + enabled auth methods
+- [ ] Magic-link sign-in works
 - [ ] Google OAuth works (after adding redirect URI)
 - [ ] `/admin/theme` loads (logged in as admin)
 - [ ] `/admin/navbar` loads (admin preview page)
 - [ ] `/error_logs` loads
-- [ ] SSO from McRitchie Studio works
+- [ ] SSO from McRitchie Studio works, if enabled
 
 ---
 
@@ -394,7 +409,7 @@ If the app needs Solana wallet auth and/or on-chain operations, add this on top 
 ### Additional Gems
 
 ```ruby
-gem "solana-studio", git: "https://github.com/amcritchie/solana-studio.git"
+gem "solana-studio", "~> 0.4.7"
 gem "ed25519"           # Signature verification
 gem "sidekiq"           # Background jobs (ATA creation, balance sync)
 ```

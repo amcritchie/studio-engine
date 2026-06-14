@@ -224,9 +224,9 @@ McRitchie Studio is the central auth hub. Satellite apps (Turf Monster, future a
 ## Updating the Engine
 
 1. Make changes in `/Users/alex/projects/studio-engine/`
-2. Commit and push to GitHub
-3. Bump `lib/studio/version.rb` + CHANGELOG.md, tag `v0.X.Y`, push tag
-4. In each consumer app: bump the `tag:` in Gemfile, `bundle update studio-engine`, test
+2. Run `bin/release-check`
+3. Follow `docs/RELEASE.md` for the approved RubyGems release flow
+4. In each consumer app: `bundle update studio-engine`, verify `Gemfile.lock`, test
 
 See README.md "Releasing" section for the full flow.
 

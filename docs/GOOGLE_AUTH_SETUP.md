@@ -99,7 +99,7 @@ Add the callback URL for your new app:
 | App | Port | Dev URI | Prod URI |
 |-----|------|---------|----------|
 | McRitchie Studio | 3000 | `http://localhost:3000/auth/google_oauth2/callback` | `https://app.mcritchie.studio/auth/google_oauth2/callback` |
-| Turf Monster | 3001 | `http://localhost:3001/auth/google_oauth2/callback` | `https://turf.mcritchie.studio/auth/google_oauth2/callback` |
+| Turf Monster | 3100 | `http://localhost:3100/auth/google_oauth2/callback` | `https://app.turfmonster.media/auth/google_oauth2/callback` |
 | Tax Studio | 3003 | `http://localhost:3003/auth/google_oauth2/callback` | `https://tax.mcritchie.studio/auth/google_oauth2/callback` |
 
 ### 6. Routes (already handled)
