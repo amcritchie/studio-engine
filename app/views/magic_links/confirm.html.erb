@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <%= csrf_meta_tags %>
+    <title>Signing you in - <%= Studio.app_name %></title>
+    <style>
+      @keyframes magic-spin { to { transform: rotate(360deg); } }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        color: #f8fafc;
+        background: <%= Studio.theme_dark %>;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+
+      main { width: min(100% - 32px, 420px); text-align: center; }
+
+      .magic-spinner {
+        width: 88px;
+        height: 88px;
+        margin: 0 auto;
+        border-radius: 9999px;
+        border: 8px solid rgba(255, 255, 255, 0.14);
+        border-top-color: <%= Studio.theme_success %>;
+        animation: magic-spin 0.8s linear infinite;
+      }
+
+      .magic-fallback {
+        display: none;
+        margin-top: 2rem;
+        color: rgba(248, 250, 252, 0.8);
+      }
+
+      .magic-fallback p { margin: 0 0 1rem; font-size: 15px; }
+
+      .magic-submit {
+        display: inline-block;
+        max-width: 100%;
+        padding: 14px 34px;
+        border: 0;
+        border-radius: 8px;
+        color: #ffffff;
+        background: <%= Studio.theme_success %>;
+        font: inherit;
+        font-size: 16px;
+        font-weight: 700;
+        cursor: pointer;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <div class="magic-spinner" role="status" aria-label="Signing you in"></div>
+
+      <div id="magic-fallback" class="magic-fallback">
+        <p>Taking longer than expected?</p>
+        <%= button_to magic_link_consume_path(token: @token),
+              method: :post,
+              form: { id: "magic-consume-form", data: { turbo: "false" } },
+              class: "magic-submit" do %>
+          Sign in to <%= Studio.app_name %>
+        <% end %>
+      </div>
+    </main>
+
+    <noscript>
+      <style>
+        #magic-fallback { display: block !important; }
+        .magic-spinner { display: none; }
+      </style>
+    </noscript>
+
+    <script>
+      (function () {
+        var form = document.getElementById("magic-consume-form");
+        if (form && !form.dataset.autoSubmitted) {
+          form.dataset.autoSubmitted = "1";
+          if (typeof form.requestSubmit === "function") form.requestSubmit();
+          else form.submit();
+        }
+
+        setTimeout(function () {
+          var fallback = document.getElementById("magic-fallback");
+          if (fallback) fallback.style.display = "block";
+        }, 4000);
+      })();
+    </script>
+  </body>
+</html>

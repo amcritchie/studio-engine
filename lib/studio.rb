@@ -159,12 +159,16 @@ module Studio
       get  "auth/failure", to: "omniauth_callbacks#failure"
 
       # Passwordless email (magic link). Helpers: magic_link_request_path (POST
-      # to request a link) + magic_link_path(token) / magic_link_url(token:)
-      # (the emailed consume link). The token is a URL-safe MessageVerifier blob
-      # but the constraint guards against a stray "." segment.
+      # to request a link), magic_link_path(token) / magic_link_url(token:)
+      # for the emailed GET confirmation page, and magic_link_consume_path(token)
+      # for the scanner-safe POST consume. The token is a URL-safe
+      # MessageVerifier blob but the constraint guards against a stray "."
+      # segment.
       if Studio.draw_auth_routes && Studio.auth_method?(:magic_link)
-        post "magic_link",        to: "magic_links#create",  as: :magic_link_request
-        get  "magic_link/:token", to: "magic_links#consume", as: :magic_link,
+        post "magic_link",        to: "magic_links#create",   as: :magic_link_request
+        get  "magic_link/:token", to: "magic_links#confirm",  as: :magic_link,
+             constraints: { token: %r{[^/]+} }
+        post "magic_link/:token", to: "magic_links#consume",  as: :magic_link_consume,
              constraints: { token: %r{[^/]+} }
       end
 

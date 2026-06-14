@@ -6,6 +6,12 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 No entries yet.
 
+## v0.5.4 (2026-06-14)
+
+### Changed
+- Engine magic links are now scanner-safe: emailed links land on an inert GET confirmation page, and the token is consumed only by the CSRF-protected POST from that page.
+- Added the shared `magic_link_consume_path` route helper for consumer apps using engine-drawn auth routes.
+
 ## v0.5.3 (2026-06-14)
 
 ### Added

@@ -11,7 +11,7 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 gem "studio-engine", "~> 0.5"
 ```
 
-Then `bundle install`. The current release is **v0.5.2**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.5.4**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
 > Published to RubyGems as of v0.4.0 (2026-05-17). New installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`) already use.
 
@@ -62,7 +62,7 @@ Rails.application.routes.draw do
 end
 ```
 
-This draws the enabled auth routes (`/login`, `/signup`, `/logout`, magic-link routes, Solana routes), OAuth callbacks, optional SSO routes, `/error_logs`, and `/admin/theme`.
+This draws the enabled auth routes (`/login`, `/signup`, `/logout`, magic-link request/confirm/consume routes, Solana routes), OAuth callbacks, optional SSO routes, `/error_logs`, and `/admin/theme`. Magic-link emails point at the inert GET confirmation route; the single-use token is consumed only by the CSRF-protected POST to `magic_link_consume_path`.
 
 ## Overriding Views
 

@@ -1,7 +1,8 @@
 # Unified create-or-login email magic link (the passwordless email path).
 #
 #   POST /magic_link        — request a link (email [, return_to])
-#   GET  /magic_link/:token — consume it: log in OR create the account
+#   GET  /magic_link/:token — "Confirm sign-in" interstitial (does NOT consume)
+#   POST /magic_link/:token — consume it: log in OR create the account
 #
 # create-or-login: clicking the link IS proof of email ownership, so an email
 # that collides with a Google/wallet-only account that was never email-verified
@@ -14,6 +15,7 @@
 # sign_in_existing / sign_up_new building blocks.
 class MagicLinksController < ApplicationController
   skip_before_action :require_authentication
+  layout false, only: :confirm
 
   # Respond uniformly for any well-formed email. Under create-or-login every
   # address is "valid" (it logs in or signs up), so there is nothing to
@@ -30,13 +32,22 @@ class MagicLinksController < ApplicationController
     end
   end
 
+  # GET /magic_link/:token is deliberately inert. Email link scanners and link
+  # preview clients frequently prefetch emailed URLs with GET/HEAD; if GET burned
+  # the token, the human's first real click could already be invalid. The page
+  # renders a CSRF-protected form that a browser auto-POSTs to #consume.
+  def confirm
+    # strict-origin strips the token-bearing path from subresource Referer
+    # headers while preserving a usable Origin header for Rails' CSRF origin
+    # check on the consume POST.
+    response.set_header("Referrer-Policy", "strict-origin")
+    @token = params[:token]
+  end
+
+  # POST /magic_link/:token is the authoritative consume. This is the only place
+  # the single-use token is burned.
   def consume
-    # Keep the token out of Referer headers on the consume page's subresource
-    # loads. Single-use + short TTL is the primary defence; this closes the
-    # passive-leak gap. NOTE: aggressive email link-scanners (Outlook SafeLinks,
-    # Mimecast) may pre-fetch the link and burn the single-use token before the
-    # human clicks — a known magic-link tradeoff; documented for support.
-    response.set_header("Referrer-Policy", "no-referrer")
+    response.set_header("Referrer-Policy", "strict-origin")
     result = MagicLink.consume(params[:token])
     user = User.find_by(email: result.email)
     user ? sign_in_existing(user, result) : sign_up_new(result)
