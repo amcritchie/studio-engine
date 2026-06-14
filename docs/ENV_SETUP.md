@@ -61,7 +61,7 @@ SES_SMTP_PASSWORD=...
 SES_AWS_ACCESS_KEY_ID=...     # SES API checks only
 SES_AWS_SECRET_ACCESS_KEY=... # SES API checks only
 RESEND_API_KEY=... # rollback only
-MAILER_FROM=noreply@example.com
+MAILER_FROM="My App <team@example.com>"
 ```
 
 Turf Monster also needs Solana and wallet-encryption variables. Use its

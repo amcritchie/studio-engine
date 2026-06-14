@@ -35,7 +35,7 @@ Studio.configure do |config|
   config.auth_methods = %i[magic_link google]
   config.registration_params = [:name, :email]
   config.magic_link_token_name = "magic_link_my_app_v1"
-  config.mailer_from = ENV.fetch("MAILER_FROM", "noreply@example.com")
+  config.mailer_from = ENV.fetch("MAILER_FROM", "My App <team@example.com>")
   config.theme_primary = "#4BAF50"   # Override default violet
   config.theme_logos = ["logo.svg"]
 end

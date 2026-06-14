@@ -97,7 +97,7 @@ Studio.configure do |config|
   config.auth_methods = %i[magic_link google]  # add :wallet or :password only when needed
   config.registration_params = [:name, :email]
   config.magic_link_token_name = "magic_link_x_app_v1"
-  config.mailer_from = ENV.fetch("MAILER_FROM", "noreply@example.com")
+  config.mailer_from = ENV.fetch("MAILER_FROM", "X App <team@example.com>")
   config.configure_sso_user = ->(user) { user.role = "viewer" }
   # Optional: defaults check wallet_address, then solana_address.
   # Set this if your User exposes a different wallet column/helper.

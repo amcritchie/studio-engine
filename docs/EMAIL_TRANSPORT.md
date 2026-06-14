@@ -50,7 +50,7 @@ SES_SMTP_PORT=587
 SES_AWS_ACCESS_KEY_ID=...      # SES API checks only; optional fallback to AWS_ACCESS_KEY_ID
 SES_AWS_SECRET_ACCESS_KEY=...  # SES API checks only; optional fallback to AWS_SECRET_ACCESS_KEY
 RESEND_API_KEY=...             # rollback only
-MAILER_FROM=noreply@example.com
+MAILER_FROM="My App <team@example.com>"
 ```
 
 ## SES Tasks
