@@ -40,7 +40,9 @@ The engine reads these values only through consumer apps.
 | `SES_AWS_ACCESS_KEY_ID` | SES helper tasks | SES-scoped IAM access key for `ses:check` and `ses:verify_domain`; keep separate from S3 `AWS_ACCESS_KEY_ID`. |
 | `SES_AWS_SECRET_ACCESS_KEY` | SES helper tasks | Pair for `SES_AWS_ACCESS_KEY_ID`; never print the value. |
 | `RESEND_API_KEY` | Resend rollback | Used only when SES is inactive or unavailable. |
-| `MAILER_FROM` | Apps that send mail | Must belong to a domain verified by the selected provider. |
+| `MAILER_FROM` | Apps that send mail | App/domain sender used when SES is active. |
+| `MARKETING_MAILER_FROM` | Apps with newsletters/broadcasts | App/domain marketing sender used when SES is active. |
+| `RESEND_MAILER_FROM` | Resend rollback | Shared verified Resend sender; default convention is `McRitchie Studio <team@mcritchie.studio>`. |
 
 App-specific variables such as `SOLANA_ADMIN_KEY`, RPC URLs, AWS bucket names,
 or product API keys belong in the owning app's docs and McRitchie Studio's
@@ -62,6 +64,8 @@ SES_AWS_ACCESS_KEY_ID=...     # SES API checks only
 SES_AWS_SECRET_ACCESS_KEY=... # SES API checks only
 RESEND_API_KEY=... # rollback only
 MAILER_FROM="My App <team@example.com>"
+MARKETING_MAILER_FROM="Alex from My App <alex@example.com>"
+RESEND_MAILER_FROM="McRitchie Studio <team@mcritchie.studio>"
 ```
 
 Turf Monster also needs Solana and wallet-encryption variables. Use its

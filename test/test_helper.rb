@@ -35,10 +35,42 @@ module Studio
   mattr_accessor :theme_warning,  default: "#FF7C47"
   mattr_accessor :theme_danger,   default: "#EF4444"
   mattr_accessor :theme_accent,   default: "#F72585"
+  mattr_accessor :mailer_from, default: nil
+  mattr_accessor :resend_mailer_from, default: "McRitchie Studio <team@mcritchie.studio>"
   mattr_accessor :local_email_capture, default: nil
 
   def self.configure
     yield self
+  end
+
+  def self.mailer_from_for_transport(env: ENV, ses_from:, resend_from: nil)
+    if ses_transport_ready?(env)
+      env_value(env, "MAILER_FROM") || ses_from
+    else
+      env_value(env, "RESEND_MAILER_FROM") || resend_from || resend_mailer_from
+    end
+  end
+
+  def self.marketing_from_for_transport(env: ENV, ses_from:, resend_from: nil)
+    if ses_transport_ready?(env)
+      env_value(env, "MARKETING_MAILER_FROM") || ses_from
+    else
+      env_value(env, "RESEND_MARKETING_FROM") ||
+        env_value(env, "RESEND_MAILER_FROM") ||
+        resend_from ||
+        resend_mailer_from
+    end
+  end
+
+  def self.ses_transport_ready?(env = ENV)
+    env["MAIL_TRANSPORT"].to_s.downcase == "ses" &&
+      env_value(env, "SES_SMTP_USERNAME") &&
+      env_value(env, "SES_SMTP_PASSWORD")
+  end
+
+  def self.env_value(env, key)
+    value = env[key]
+    value if value && !value.to_s.strip.empty?
   end
 
   def self.local_email_capture?

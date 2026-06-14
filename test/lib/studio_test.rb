@@ -18,9 +18,18 @@ class StudioTest < Minitest::Test
     Studio.theme_warning       = "#FF7C47"
     Studio.theme_danger        = "#EF4444"
     Studio.theme_accent        = "#F72585"
+    Studio.mailer_from         = nil
+    Studio.resend_mailer_from  = "McRitchie Studio <team@mcritchie.studio>"
     Studio.local_email_capture = nil
     ENV.delete("LOCAL_EMAIL_CAPTURE")
     ENV.delete("AGENT_WORKTREE")
+    ENV.delete("MAIL_TRANSPORT")
+    ENV.delete("MAILER_FROM")
+    ENV.delete("MARKETING_MAILER_FROM")
+    ENV.delete("RESEND_MAILER_FROM")
+    ENV.delete("RESEND_MARKETING_FROM")
+    ENV.delete("SES_SMTP_USERNAME")
+    ENV.delete("SES_SMTP_PASSWORD")
   end
 
   # ── configure ───────────────────────────────────────────────
@@ -148,6 +157,56 @@ class StudioTest < Minitest::Test
   ensure
     ENV.delete("AGENT_WORKTREE")
     Studio.local_email_capture = nil
+  end
+
+  def test_mailer_from_for_transport_uses_ses_sender_when_ses_is_ready
+    env = {
+      "MAIL_TRANSPORT" => "ses",
+      "SES_SMTP_USERNAME" => "user",
+      "SES_SMTP_PASSWORD" => "pass",
+      "MAILER_FROM" => "Turf Monster <team@turfmonster.media>"
+    }
+
+    assert_equal "Turf Monster <team@turfmonster.media>",
+                 Studio.mailer_from_for_transport(env: env, ses_from: "App <team@example.com>")
+  end
+
+  def test_mailer_from_for_transport_uses_resend_sender_when_ses_is_not_ready
+    env = {
+      "MAIL_TRANSPORT" => "ses",
+      "MAILER_FROM" => "Turf Monster <team@turfmonster.media>",
+      "RESEND_MAILER_FROM" => "McRitchie Studio <team@mcritchie.studio>"
+    }
+
+    assert_equal "McRitchie Studio <team@mcritchie.studio>",
+                 Studio.mailer_from_for_transport(env: env, ses_from: "Turf Monster <team@turfmonster.media>")
+  end
+
+  def test_mailer_from_for_transport_defaults_to_shared_resend_sender
+    assert_equal "McRitchie Studio <team@mcritchie.studio>",
+                 Studio.mailer_from_for_transport(env: {}, ses_from: "App <team@example.com>")
+  end
+
+  def test_marketing_from_for_transport_uses_marketing_sender_when_ses_is_ready
+    env = {
+      "MAIL_TRANSPORT" => "ses",
+      "SES_SMTP_USERNAME" => "user",
+      "SES_SMTP_PASSWORD" => "pass",
+      "MARKETING_MAILER_FROM" => "Alex from Turf Monster <alex@turfmonster.media>"
+    }
+
+    assert_equal "Alex from Turf Monster <alex@turfmonster.media>",
+                 Studio.marketing_from_for_transport(env: env, ses_from: "Alex <alex@example.com>")
+  end
+
+  def test_marketing_from_for_transport_uses_shared_resend_sender_for_fallback
+    env = {
+      "RESEND_MAILER_FROM" => "McRitchie Studio <team@mcritchie.studio>",
+      "MARKETING_MAILER_FROM" => "Alex from Turf Monster <alex@turfmonster.media>"
+    }
+
+    assert_equal "McRitchie Studio <team@mcritchie.studio>",
+                 Studio.marketing_from_for_transport(env: env, ses_from: "Alex from Turf Monster <alex@turfmonster.media>")
   end
 
   def test_user_wallet_address_uses_wallet_address_by_default

@@ -8,7 +8,7 @@ agent session without explicit approval.
 
 ## Current Release
 
-The current published release used by local consumers is `v0.5.6`:
+The current published release used by local consumers is `v0.5.7`:
 
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.

@@ -25,7 +25,19 @@ Studio::MailTransport.configure!
 ```
 
 The app still owns `Studio.mailer_from` in `config/initializers/studio.rb`.
-`MAILER_FROM` must belong to a domain verified by the selected provider.
+Use the provider-aware helper so SES uses the app's verified domain while
+Resend fallback can use a single shared verified sender:
+
+```ruby
+Studio.configure do |config|
+  config.mailer_from = Studio.mailer_from_for_transport(
+    ses_from: "My App <team@example.com>"
+  )
+end
+```
+
+`MAILER_FROM` must belong to a domain verified in SES. `RESEND_MAILER_FROM`
+must belong to the shared domain verified in Resend.
 
 ## Selection Rules
 
@@ -51,6 +63,8 @@ SES_AWS_ACCESS_KEY_ID=...      # SES API checks only; optional fallback to AWS_A
 SES_AWS_SECRET_ACCESS_KEY=...  # SES API checks only; optional fallback to AWS_SECRET_ACCESS_KEY
 RESEND_API_KEY=...             # rollback only
 MAILER_FROM="My App <team@example.com>"
+MARKETING_MAILER_FROM="Alex from My App <alex@example.com>"
+RESEND_MAILER_FROM="McRitchie Studio <team@mcritchie.studio>"
 ```
 
 ## SES Tasks

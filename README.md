@@ -11,7 +11,7 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 gem "studio-engine", "~> 0.5"
 ```
 
-Then `bundle install`. The current release is **v0.5.6**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.5.7**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
 > Published to RubyGems as of v0.4.0 (2026-05-17). New installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`) already use.
 
@@ -35,7 +35,9 @@ Studio.configure do |config|
   config.auth_methods = %i[magic_link google]
   config.registration_params = [:name, :email]
   config.magic_link_token_name = "magic_link_my_app_v1"
-  config.mailer_from = ENV.fetch("MAILER_FROM", "My App <team@example.com>")
+  config.mailer_from = Studio.mailer_from_for_transport(
+    ses_from: "My App <team@example.com>"
+  )
   config.theme_primary = "#4BAF50"   # Override default violet
   config.theme_logos = ["logo.svg"]
 end

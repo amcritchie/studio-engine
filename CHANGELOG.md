@@ -4,6 +4,16 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.5.7 (2026-06-14)
+
+### Added
+- **`Studio.mailer_from_for_transport` / `Studio.marketing_from_for_transport`** —
+  provider-aware sender helpers. SES-ready apps use app/domain-specific
+  `MAILER_FROM` and `MARKETING_MAILER_FROM`; Resend fallback uses
+  `RESEND_MAILER_FROM`, defaulting to `McRitchie Studio <team@mcritchie.studio>`
+  so new apps can send during SES sandbox/presetup without verifying a second
+  Resend domain.
+
 ### Fixed
 - **`ses:check` / `ses:verify_domain` credential selection** now prefers
   `SES_AWS_ACCESS_KEY_ID` / `SES_AWS_SECRET_ACCESS_KEY` before falling back to

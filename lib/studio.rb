@@ -41,6 +41,7 @@ module Studio
   # Default From: for engine-sent mail (magic links). Apps set this to their
   # verified sending address in config/initializers/studio.rb.
   mattr_accessor :mailer_from, default: nil
+  mattr_accessor :resend_mailer_from, default: "McRitchie Studio <team@mcritchie.studio>"
 
   # Local/worktree email capture. nil means "auto": enabled when AGENT_WORKTREE
   # is truthy, otherwise disabled. Production always disables capture.
@@ -86,6 +87,36 @@ module Studio
 
   def self.configure
     yield self
+  end
+
+  def self.mailer_from_for_transport(env: ENV, ses_from:, resend_from: nil)
+    if ses_transport_ready?(env)
+      env_value(env, "MAILER_FROM") || ses_from
+    else
+      env_value(env, "RESEND_MAILER_FROM") || resend_from || resend_mailer_from
+    end
+  end
+
+  def self.marketing_from_for_transport(env: ENV, ses_from:, resend_from: nil)
+    if ses_transport_ready?(env)
+      env_value(env, "MARKETING_MAILER_FROM") || ses_from
+    else
+      env_value(env, "RESEND_MARKETING_FROM") ||
+        env_value(env, "RESEND_MAILER_FROM") ||
+        resend_from ||
+        resend_mailer_from
+    end
+  end
+
+  def self.ses_transport_ready?(env = ENV)
+    env["MAIL_TRANSPORT"].to_s.downcase == "ses" &&
+      env_value(env, "SES_SMTP_USERNAME") &&
+      env_value(env, "SES_SMTP_PASSWORD")
+  end
+
+  def self.env_value(env, key)
+    value = env[key]
+    value if value && !value.to_s.strip.empty?
   end
 
   # True when the given sign-in method is enabled for this app.
