@@ -11,7 +11,7 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 gem "studio-engine", "~> 0.5"
 ```
 
-Then `bundle install`. The current release is **v0.5.5**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.5.6**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
 > Published to RubyGems as of v0.4.0 (2026-05-17). New installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`) already use.
 
@@ -105,4 +105,7 @@ For short local experiments, temporarily point a consumer Gemfile at `path: "../
 
 ## Development Notes
 
-See [CLAUDE.md](./CLAUDE.md) only as legacy migration context while neutral agent docs are being extracted. Current cross-repo setup, ports, credentials, and workflow guidance live in McRitchie Studio's [`docs/agents/`](https://github.com/amcritchie/mcritchie-studio/tree/main/docs/agents).
+Use the docs in [`docs/`](./docs) for engine setup, release, email transport,
+and host-app contracts. Current cross-repo setup, ports, credentials, and
+workflow guidance live in McRitchie Studio's
+[`docs/agents/`](https://github.com/amcritchie/mcritchie-studio/tree/main/docs/agents).
