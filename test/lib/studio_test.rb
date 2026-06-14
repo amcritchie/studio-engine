@@ -17,6 +17,9 @@ class StudioTest < Minitest::Test
     Studio.theme_warning       = "#FF7C47"
     Studio.theme_danger        = "#EF4444"
     Studio.theme_accent        = "#F72585"
+    Studio.local_email_capture = nil
+    ENV.delete("LOCAL_EMAIL_CAPTURE")
+    ENV.delete("AGENT_WORKTREE")
   end
 
   # ── configure ───────────────────────────────────────────────
@@ -113,6 +116,33 @@ class StudioTest < Minitest::Test
 
   def test_default_configure_sso_user_is_callable
     assert_respond_to Studio.configure_sso_user, :call
+  end
+
+  def test_local_email_capture_defaults_off
+    refute Studio.local_email_capture?
+  end
+
+  def test_local_email_capture_turns_on_for_agent_worktree
+    ENV["AGENT_WORKTREE"] = "1"
+    assert Studio.local_email_capture?
+  ensure
+    ENV.delete("AGENT_WORKTREE")
+  end
+
+  def test_local_email_capture_env_overrides_auto
+    ENV["LOCAL_EMAIL_CAPTURE"] = "true"
+    assert Studio.local_email_capture?
+  ensure
+    ENV.delete("LOCAL_EMAIL_CAPTURE")
+  end
+
+  def test_local_email_capture_config_override_wins
+    ENV["AGENT_WORKTREE"] = "1"
+    Studio.local_email_capture = false
+    refute Studio.local_email_capture?
+  ensure
+    ENV.delete("AGENT_WORKTREE")
+    Studio.local_email_capture = nil
   end
 
   # ── theme_config ────────────────────────────────────────────

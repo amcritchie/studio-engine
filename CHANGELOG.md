@@ -6,6 +6,12 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 No entries yet.
 
+## v0.5.5 (2026-06-14)
+
+### Added
+- **Local email inbox** at `/_studio/local_emails` for non-production localhost requests. It lists recent outbox rows and exposes local proof links for magic-link, email-verification, wallet-export, and email-change emails.
+- **`Studio.local_email_capture?`** — shared capture switch for local/worktree stacks. `LOCAL_EMAIL_CAPTURE=1` or `AGENT_WORKTREE=1` records delivery rows without enqueueing external sends.
+
 ## v0.5.4 (2026-06-14)
 
 ### Changed

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <title>Local Emails - <%= Studio.app_name %></title>
+    <style>
+      * { box-sizing: border-box; }
+      body {
+        margin: 0;
+        background: #10101f;
+        color: #f8fafc;
+        font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      }
+      main { width: min(1180px, calc(100% - 32px)); margin: 32px auto; }
+      header { display: flex; align-items: flex-start; justify-content: space-between; gap: 24px; margin-bottom: 24px; }
+      h1 { margin: 0 0 8px; font-size: 28px; line-height: 1.2; }
+      p { margin: 0; color: #b6bdd3; }
+      .pill { display: inline-flex; align-items: center; border: 1px solid #3b3b62; border-radius: 999px; padding: 6px 12px; color: #d8dcf0; background: #18182b; font-size: 13px; white-space: nowrap; }
+      .notice { margin-bottom: 18px; border: 1px solid #3b3b62; border-radius: 8px; background: #18182b; padding: 14px 16px; color: #cbd2e8; }
+      table { width: 100%; border-collapse: collapse; overflow: hidden; border-radius: 8px; background: #18182b; }
+      th, td { padding: 12px 14px; border-bottom: 1px solid #2f2f4d; text-align: left; vertical-align: top; }
+      th { color: #9fa7c3; font-size: 12px; text-transform: uppercase; }
+      td { color: #eef2ff; font-size: 14px; }
+      tr:last-child td { border-bottom: 0; }
+      code { color: #c4b5fd; word-break: break-word; }
+      .muted { color: #9fa7c3; }
+      .error { color: #fda4af; }
+      .button { display: inline-flex; align-items: center; justify-content: center; border-radius: 8px; padding: 8px 12px; background: #4baf50; color: #fff; font-weight: 700; text-decoration: none; white-space: nowrap; }
+      .empty { border: 1px solid #3b3b62; border-radius: 8px; background: #18182b; padding: 24px; color: #cbd2e8; }
+      @media (max-width: 760px) {
+        header { display: block; }
+        .pill { margin-top: 14px; }
+        table, thead, tbody, tr, th, td { display: block; }
+        thead { display: none; }
+        tr { border-bottom: 1px solid #2f2f4d; padding: 10px 0; }
+        td { border-bottom: 0; padding: 8px 14px; }
+        td::before { content: attr(data-label); display: block; color: #9fa7c3; font-size: 12px; text-transform: uppercase; margin-bottom: 4px; }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <div>
+          <h1>Local Emails</h1>
+          <p>Recent outbox rows for this local <%= Studio.app_name %> stack.</p>
+        </div>
+        <span class="pill">Capture <%= Studio.local_email_capture? ? "enabled" : "disabled" %></span>
+      </header>
+
+      <% if Studio.local_email_capture? %>
+        <div class="notice">This stack records email intents and does not send them to external providers.</div>
+      <% else %>
+        <div class="notice">Capture is disabled. This page still shows recent delivery rows, but this stack may send real email when workers run.</div>
+      <% end %>
+
+      <% if @deliveries.empty? %>
+        <div class="empty">No email deliveries have been recorded yet.</div>
+      <% else %>
+        <table>
+          <thead>
+            <tr>
+              <th>When</th>
+              <th>Message</th>
+              <th>To</th>
+              <th>Status</th>
+              <th>Proof URL</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% @deliveries.each do |delivery| %>
+              <tr>
+                <td data-label="When"><%= delivery[:created_at]&.strftime("%Y-%m-%d %H:%M:%S") %></td>
+                <td data-label="Message"><code><%= delivery[:email_key] %></code></td>
+                <td data-label="To"><%= delivery[:to] %></td>
+                <td data-label="Status">
+                  <% if delivery[:sent] %>
+                    Sent
+                  <% elsif delivery[:error].present? %>
+                    <span class="error"><%= delivery[:error] %></span>
+                  <% else %>
+                    <span class="muted">Captured</span>
+                  <% end %>
+                </td>
+                <td data-label="Proof URL">
+                  <% if delivery[:action_url].present? %>
+                    <a class="button" href="<%= delivery[:action_url] %>">Open link</a>
+                  <% else %>
+                    <span class="muted">No local action URL</span>
+                  <% end %>
+                </td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+      <% end %>
+    </main>
+  </body>
+</html>

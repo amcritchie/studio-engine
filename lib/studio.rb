@@ -41,6 +41,10 @@ module Studio
   # verified sending address in config/initializers/studio.rb.
   mattr_accessor :mailer_from, default: nil
 
+  # Local/worktree email capture. nil means "auto": enabled when AGENT_WORKTREE
+  # is truthy, otherwise disabled. Production always disables capture.
+  mattr_accessor :local_email_capture, default: nil
+
   # Theme role colors (7 roles)
   mattr_accessor :theme_primary,  default: "#8E82FE"
   mattr_accessor :theme_dark,     default: "#1A1535"
@@ -86,6 +90,13 @@ module Studio
   # True when the given sign-in method is enabled for this app.
   def self.auth_method?(method)
     auth_methods.include?(method.to_sym)
+  end
+
+  def self.local_email_capture?
+    return false if defined?(Rails) && Rails.respond_to?(:env) && Rails.env.production?
+    return !!local_email_capture unless local_email_capture.nil?
+
+    env_truthy?(ENV["LOCAL_EMAIL_CAPTURE"]) || env_truthy?(ENV["AGENT_WORKTREE"])
   end
 
   # Verifies that the host app's User model satisfies the engine's expected
@@ -146,6 +157,10 @@ module Studio
     entry ? "/#{entry[:file]}" : nil
   end
 
+  def self.env_truthy?(value)
+    %w[1 true yes on].include?(value.to_s.strip.downcase)
+  end
+
   def self.routes(router)
     router.instance_exec do
       get  "login",  to: "sessions#new"
@@ -157,6 +172,10 @@ module Studio
       post "signup", to: "registrations#create"
       get  "auth/:provider/callback", to: "omniauth_callbacks#create"
       get  "auth/failure", to: "omniauth_callbacks#failure"
+
+      unless defined?(Rails) && Rails.env.production?
+        get "_studio/local_emails", to: "studio/local_emails#index", as: :studio_local_emails
+      end
 
       # Passwordless email (magic link). Helpers: magic_link_request_path (POST
       # to request a link), magic_link_path(token) / magic_link_url(token:)

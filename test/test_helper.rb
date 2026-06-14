@@ -34,9 +34,16 @@ module Studio
   mattr_accessor :theme_warning,  default: "#FF7C47"
   mattr_accessor :theme_danger,   default: "#EF4444"
   mattr_accessor :theme_accent,   default: "#F72585"
+  mattr_accessor :local_email_capture, default: nil
 
   def self.configure
     yield self
+  end
+
+  def self.local_email_capture?
+    return !!local_email_capture unless local_email_capture.nil?
+
+    env_truthy?(ENV["LOCAL_EMAIL_CAPTURE"]) || env_truthy?(ENV["AGENT_WORKTREE"])
   end
 
   def self.theme_config
@@ -49,5 +56,9 @@ module Studio
       danger:  theme_danger,
       accent:  theme_accent
     }.compact
+  end
+
+  def self.env_truthy?(value)
+    %w[1 true yes on].include?(value.to_s.strip.downcase)
   end
 end

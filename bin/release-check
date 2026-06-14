@@ -30,6 +30,7 @@ for file in \
   lib/studio/email.rb \
   lib/studio/mail_transport.rb \
   app/controllers/magic_links_controller.rb \
+  app/controllers/studio/local_emails_controller.rb \
   app/models/studio/email_delivery.rb \
   app/jobs/studio/email_delivery_job.rb \
   lib/tasks/studio_ses.rake \
