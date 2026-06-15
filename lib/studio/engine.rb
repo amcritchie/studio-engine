@@ -1,6 +1,7 @@
 module Studio
   class Engine < ::Rails::Engine
     rake_tasks do
+      load File.expand_path("../tasks/studio_email.rake", __dir__)
       load File.expand_path("../tasks/studio_ses.rake", __dir__)
     end
 

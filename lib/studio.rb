@@ -6,6 +6,7 @@ require "studio/username_generator"
 require "studio/s3"
 require "studio/image_cache"
 require "studio/email"
+require "studio/email_smoke"
 require "studio/mail_transport"
 
 module Studio

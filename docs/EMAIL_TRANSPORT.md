@@ -85,6 +85,28 @@ mistaken for the SES verification user.
 These are SES API credentials, not runtime SMTP credentials. Runtime delivery
 still needs `SES_SMTP_USERNAME` and `SES_SMTP_PASSWORD`.
 
+## Provider Smoke Test
+
+Use the shared smoke task when the question is "can this app send one real
+email through its current provider?"
+
+```bash
+bin/rails "email:smoke[to@example.com]"
+```
+
+`EMAIL_SMOKE_TO=to@example.com bin/rails email:smoke` is equivalent when a shell
+or process manager makes bracket arguments awkward.
+
+The task sends one direct ActionMailer message, bypassing app-specific mailers,
+outbox workers, and auth flows. It prints the app name, recipient, sender,
+transport (`resend`, `ses`, `capture`, or the ActionMailer delivery method),
+`perform_deliveries`, external-send status, and message id.
+
+By default it refuses to proceed when mail would be captured, written to file,
+delivered through the test adapter, or skipped by `perform_deliveries=false`.
+Set `EMAIL_SMOKE_ALLOW_NON_EXTERNAL=1` only when intentionally proving
+capture/test mode; do not use that as provider proof.
+
 ## Durable Delivery
 
 New apps should install the engine migration before relying on durable delivery:

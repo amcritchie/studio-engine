@@ -4,6 +4,15 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.5.9 (2026-06-14)
+
+### Added
+- **`bin/rails "email:smoke[to@example.com]"`** — shared provider smoke-test
+  task that sends one direct ActionMailer message through the current transport
+  and prints the app, sender, transport, delivery method, `perform_deliveries`,
+  external-send status, and message id. It refuses capture/test/file modes by
+  default so agents do not mistake swallowed mail for a provider proof.
+
 ## v0.5.8 (2026-06-14)
 
 ### Added

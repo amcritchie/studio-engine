@@ -14,6 +14,7 @@ require_relative "../lib/studio/version"
 require_relative "../lib/studio/color_scale"
 require_relative "../lib/studio/theme_resolver"
 require_relative "../lib/studio/email"
+require_relative "../lib/studio/email_smoke"
 
 # Define Studio module attributes without requiring the engine.
 # This mirrors lib/studio.rb but avoids the Rails engine dependency.

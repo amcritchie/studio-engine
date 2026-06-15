@@ -28,12 +28,14 @@ for file in \
   lib/studio.rb \
   lib/studio/engine.rb \
   lib/studio/email.rb \
+  lib/studio/email_smoke.rb \
   lib/studio/mail_transport.rb \
   app/helpers/studio_email_delivery_helper.rb \
   app/controllers/magic_links_controller.rb \
   app/controllers/studio/local_emails_controller.rb \
   app/models/studio/email_delivery.rb \
   app/jobs/studio/email_delivery_job.rb \
+  lib/tasks/studio_email.rake \
   lib/tasks/studio_ses.rake \
   studio-engine.gemspec
 do
@@ -45,6 +47,7 @@ for test_file in \
   test/lib/studio/color_scale_test.rb \
   test/lib/studio/theme_resolver_test.rb \
   test/lib/studio/email_test.rb \
+  test/lib/studio/email_smoke_test.rb \
   test/lib/studio/mail_transport_test.rb \
   test/lib/studio_email_delivery_helper_test.rb
 do

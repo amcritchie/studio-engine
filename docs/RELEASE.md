@@ -8,7 +8,7 @@ agent session without explicit approval.
 
 ## Current Release
 
-The current published release used by local consumers is `v0.5.8`:
+The current published release used by local consumers is `v0.5.9`:
 
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.
@@ -18,6 +18,8 @@ The current published release used by local consumers is `v0.5.8`:
   wallet-address adapters are available for consumers on `0.5.6`.
 - `StudioEmailDeliveryHelper#email_delivery_banner_status` provides shared
   non-production mail-state banner text for consumers on `0.5.8`.
+- `email:smoke[to@example.com]` sends a direct provider smoke-test message and
+  refuses swallowed/captured delivery modes by default for consumers on `0.5.9`.
 
 If additional engine changes are added before publish, review whether this
 should remain a patch release or move to the next minor.
