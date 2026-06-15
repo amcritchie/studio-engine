@@ -149,8 +149,11 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     prompt: "select_account"
 end
 
-OmniAuth.config.allowed_request_methods = [:post, :get]
+OmniAuth.config.allowed_request_methods = [:post]
 ```
+
+Keep OmniAuth's request phase POST-only. Custom Google entrypoints should render
+an auto-submitting POST form to `/auth/google_oauth2`, not redirect with GET.
 
 ## 5. Database Migrations
 

@@ -49,8 +49,12 @@ Rails.application.config.middleware.use OmniAuth::Builder do
     prompt: "select_account"
 end
 
-OmniAuth.config.allowed_request_methods = [:post, :get]
+OmniAuth.config.allowed_request_methods = [:post]
 ```
+
+Keep the OmniAuth request phase POST-only. If an app needs a popup or custom
+entrypoint, render an auto-submitting POST form to `/auth/google_oauth2`
+instead of redirecting a GET request into OmniAuth.
 
 ### 3. Add `from_omniauth` to User model
 
@@ -140,5 +144,6 @@ heroku config:set GOOGLE_CLIENT_SECRET=your-secret --app your-app
 ## Troubleshooting
 
 - **"No route matches [POST] /auth/google_oauth2"** — missing OmniAuth gems or initializer. Run `bundle install` and restart.
+- **GET `/auth/google_oauth2` does not start OAuth** — expected. Use a POST form or `button_to` for the request phase.
 - **"redirect_uri_mismatch"** — the callback URI isn't registered in Google Cloud Console. Add it (see step 5).
 - **Credentials not loading** — ensure `dotenv-rails` is in the Gemfile and the app-local `.env` exists.

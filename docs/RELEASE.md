@@ -75,7 +75,8 @@ bundle update studio-engine
 ```
 
 Verify each `Gemfile.lock` resolves the published version. For the shared mail
-transport release, the apps should resolve at least `studio-engine 0.5.2`.
+transport, local email capture, and non-production banner path, consumer apps
+should resolve the current `studio-engine 0.5.9` release.
 
 Then run the consumer smoke checks:
 
