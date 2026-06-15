@@ -1,0 +1,24 @@
+<%
+  impersonated_user = local_assigns.fetch(:impersonated_user)
+  admin_user = local_assigns.fetch(:admin_user)
+  stop_path = local_assigns.fetch(:stop_path)
+%>
+
+<% message = capture do %>
+  Logged in as <strong><%= impersonated_user.display_name %></strong><span class="hidden sm:inline" style="opacity:0.85;"> - admin impersonation</span>
+<% end %>
+<% actions = capture do %>
+  <%= render "studio/banners/button",
+             href: stop_path,
+             method: :delete,
+             variant: :solid,
+             label: "Return to #{admin_user.display_name}",
+             text_color: "#b91c1c",
+             hover_text_color: "#b91c1c" %>
+<% end %>
+
+<%= render "studio/banners/app_banner",
+           tone: :impersonation,
+           density: :normal,
+           message: message,
+           actions: actions %>

@@ -5,8 +5,11 @@ require "minitest/autorun"
 
 # Load ActiveSupport for mattr_accessor, symbolize_keys, etc.
 require "active_support"
+require "active_support/concern"
 require "active_support/core_ext/module/attribute_accessors"
 require "active_support/core_ext/hash/keys"
+require "active_support/core_ext/numeric/time"
+require "active_support/core_ext/object/blank"
 
 # Load the Studio module and pure-Ruby lib classes.
 # We skip requiring "studio/engine" since that needs a full Rails app.
@@ -39,6 +42,10 @@ module Studio
   mattr_accessor :mailer_from, default: nil
   mattr_accessor :resend_mailer_from, default: "McRitchie Studio <team@mcritchie.studio>"
   mattr_accessor :local_email_capture, default: nil
+  mattr_accessor :impersonation_target_session_key, default: :impersonated_user_id
+  mattr_accessor :impersonation_actor_session_key,  default: :true_admin_id
+  mattr_accessor :impersonation_started_at_session_key, default: :impersonation_started_at
+  mattr_accessor :impersonation_max_minutes, default: 30
 
   def self.configure
     yield self

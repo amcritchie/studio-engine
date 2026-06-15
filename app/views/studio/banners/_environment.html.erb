@@ -1,0 +1,18 @@
+<%
+  environment_label = local_assigns.fetch(:environment_label, "#{Rails.env.capitalize} Environment")
+  devnet = local_assigns.fetch(:devnet, false)
+%>
+
+<% actions = capture do %>
+  <% if devnet %>
+    <span class="rounded" style="font-size:10px; font-weight:700; padding:1px 6px; background:rgba(0,0,0,0.2);">DEVNET</span>
+  <% end %>
+  <%= render "studio/banners/dev_mode_button" %>
+  <%= render "studio/banners/email_status_button" %>
+<% end %>
+
+<%= render "studio/banners/app_banner",
+           tone: :environment,
+           density: :normal,
+           message: environment_label,
+           actions: actions %>

@@ -1,0 +1,89 @@
+<%
+  label = local_assigns[:label]
+  content = local_assigns[:content] || label
+  href = local_assigns[:href]
+  as = local_assigns.fetch(:as, href.present? ? :link : :button).to_sym
+  method = local_assigns[:method]
+  tooltip = local_assigns[:tooltip]
+  aria_label = local_assigns[:aria_label] || tooltip || label.to_s
+  variant = local_assigns.fetch(:variant, :outline).to_sym
+  hover_text_color = local_assigns.fetch(:hover_text_color, "#be185d")
+
+  base_class = "group relative inline-flex items-center font-semibold rounded px-3 py-1 whitespace-nowrap gap-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-white/90"
+  classes = [base_class, local_assigns[:class]].compact.join(" ")
+
+  tooltip_show = tooltip.present? ? "var t=this.querySelector('[data-studio-banner-tooltip]'); if(t){t.style.opacity='1';}" : ""
+  tooltip_hide = tooltip.present? ? "var t=this.querySelector('[data-studio-banner-tooltip]'); if(t){t.style.opacity='0';}" : ""
+
+  if variant == :solid
+    default_background = local_assigns.fetch(:background, "#ffffff")
+    default_border = local_assigns.fetch(:border_color, "#ffffff")
+    default_color = local_assigns.fetch(:text_color, hover_text_color)
+    hover_background = local_assigns.fetch(:hover_background, "#fff7ed")
+    hover_border = local_assigns.fetch(:hover_border_color, hover_background)
+    hover_color = local_assigns.fetch(:hover_text_color, default_color)
+  else
+    default_background = "transparent"
+    default_border = "rgba(255,255,255,0.9)"
+    default_color = "#ffffff"
+    hover_background = "#ffffff"
+    hover_border = "#ffffff"
+    hover_color = hover_text_color
+  end
+
+  base_style = [
+    "appearance:none",
+    "background:#{default_background}",
+    "border:1px solid #{default_border}",
+    "color:#{default_color}",
+    "cursor:pointer",
+    "font:inherit",
+    "font-weight:700",
+    "text-decoration:none",
+    "position:relative",
+    "transition:background-color 150ms ease, color 150ms ease, border-color 150ms ease"
+  ].join("; ")
+
+  show_styles = "this.style.background='#{hover_background}'; this.style.borderColor='#{hover_border}'; this.style.color='#{hover_color}';#{tooltip_show}"
+  hide_styles = "this.style.background='#{default_background}'; this.style.borderColor='#{default_border}'; this.style.color='#{default_color}';#{tooltip_hide}"
+
+  attrs = {
+    class: classes,
+    style: base_style,
+    title: tooltip,
+    "aria-label": aria_label.presence,
+    onmouseover: show_styles,
+    onmouseout: hide_styles,
+    onfocus: show_styles,
+    onblur: hide_styles
+  }.compact
+
+  attrs[:"@click"] = local_assigns[:alpine_click] if local_assigns[:alpine_click].present?
+
+  if tooltip.present?
+    tooltip_content = capture do
+%>
+      <span data-studio-banner-tooltip
+            class="pointer-events-none absolute right-0 top-full z-[140] mt-2 w-max max-w-[260px] rounded bg-white px-3 py-2 text-xs font-semibold text-slate-900 opacity-0 shadow-lg ring-1 ring-black/10 transition-opacity duration-150 group-hover:opacity-100 group-focus-visible:opacity-100"
+            style="position:absolute; right:0; top:100%; z-index:140; margin-top:8px; max-width:260px; width:max-content; border-radius:4px; background:#ffffff; color:#111827; padding:8px 12px; font-size:12px; font-weight:700; line-height:1.2; opacity:0; pointer-events:none; box-shadow:0 8px 18px rgba(0,0,0,0.18); transition:opacity 150ms ease;">
+        <%= tooltip %>
+      </span>
+<%
+    end
+  end
+%>
+
+<% if as == :button %>
+  <%= button_tag attrs.merge(type: "button") do %>
+    <%= content %><%= tooltip_content if tooltip.present? %>
+  <% end %>
+<% elsif method.present? %>
+  <%= button_to href,
+                attrs.merge(method: method, form_class: local_assigns.fetch(:form_class, "shrink-0")) do %>
+    <%= content %><%= tooltip_content if tooltip.present? %>
+  <% end %>
+<% else %>
+  <%= link_to href, attrs do %>
+    <%= content %><%= tooltip_content if tooltip.present? %>
+  <% end %>
+<% end %>

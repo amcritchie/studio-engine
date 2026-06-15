@@ -20,6 +20,7 @@ Then `bundle install`. The current release is **v0.5.9**; see [`CHANGELOG.md`](.
 - **Authentication**: Passwordless magic-link auth, optional password auth, Google OAuth via OmniAuth, Solana wallet sign-in, and optional one-way SSO patterns
 - **Error handling**: `Studio::ErrorHandling` concern with `rescue_and_log`, `ErrorLog` model with `capture!`, error log viewer at `/error_logs`
 - **Theme system**: Dynamic CSS custom properties generated from 7 role colors (primary, dark, light, success, accent, warning, danger). Dark/light mode toggle. Admin theme editor at `/admin/theme`.
+- **Operator tooling**: Shared `studio/banners/environment` banner with Dev Mode + email connector controls, `studio/banners/impersonation`, and an opt-in `Studio::Impersonation` concern for Act As session conventions.
 - **Sluggable concern**: `before_save :set_slug` with `to_param` for human-readable URLs
 - **ThemeSetting model**: Per-app DB overrides with fallback to config defaults
 
@@ -67,6 +68,48 @@ end
 This draws the enabled auth routes (`/login`, `/signup`, `/logout`, magic-link request/confirm/consume routes, Solana routes), OAuth callbacks, optional SSO routes, `/error_logs`, and `/admin/theme`. Magic-link emails point at the inert GET confirmation route; the single-use token is consumed only by the CSRF-protected POST to `magic_link_consume_path`.
 
 In non-production local requests, this also draws `/_studio/local_emails`, a local email inbox for agent/worktree proof flows. Set `LOCAL_EMAIL_CAPTURE=1` or run with `AGENT_WORKTREE=1` to record outbox rows without sending real email.
+
+## Non-Production Banners
+
+Consumer layouts can render the shared environment banner inside their sticky
+header:
+
+```erb
+<%= render "studio/banners/environment", devnet: false %>
+```
+
+The environment banner includes:
+
+- a Dev Mode toggle button backed by `Alpine.store("devMode")`
+- an Email status button that links to `/_studio/local_emails`
+- a send/capture signal plus SES/Resend/unknown connector icon
+
+Apps with admin Act As / impersonation state can render the matching banner
+with their own users and return route:
+
+```erb
+<%= render "studio/banners/impersonation",
+           impersonated_user: current_user,
+           admin_user: true_user,
+           stop_path: admin_stop_impersonating_path %>
+```
+
+The engine also provides an optional `Studio::Impersonation` concern for the
+session convention:
+
+```ruby
+class ApplicationController < ActionController::Base
+  include Studio::ErrorHandling
+  include Studio::Impersonation
+end
+```
+
+The concern adds `true_user`, `impersonated_user`, `impersonating?`,
+`start_impersonation_session(target_user, actor:)`, and
+`clear_impersonation_session`. Consumer apps still own the authorization rule,
+audit log, enter/exit controller actions, and any app-specific safeguards such
+as binding session-token checks to `true_user` or disabling wallet-only
+privileges while impersonating.
 
 ## Overriding Views
 

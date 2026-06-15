@@ -32,6 +32,16 @@ class StudioEmailDeliveryHelperTest < Minitest::Test
     install_action_mailer(:resend, true)
 
     assert_equal "EMAIL SEND true · resend", email_delivery_banner_status
+    assert_equal({
+      connector: "resend",
+      connector_label: "Resend",
+      email_state: "Sending",
+      provider_icon: "resend-favicon.png",
+      sends_email: true,
+      status_icon: "✅",
+      tooltip: "Connector: Resend · Emails: Sending",
+      transport: "resend"
+    }, email_delivery_banner_details)
   end
 
   def test_reports_ses_when_ses_transport_is_ready
@@ -41,6 +51,8 @@ class StudioEmailDeliveryHelperTest < Minitest::Test
     ENV["SES_SMTP_PASSWORD"] = "pass"
 
     assert_equal "EMAIL SEND true · ses", email_delivery_banner_status
+    assert_equal "ses-favicon.png", email_delivery_banner_details.fetch(:provider_icon)
+    assert_equal "Connector: SES · Emails: Sending", email_delivery_banner_details.fetch(:tooltip)
   end
 
   def test_reports_capture_when_local_capture_is_enabled
@@ -48,12 +60,17 @@ class StudioEmailDeliveryHelperTest < Minitest::Test
     Studio.local_email_capture = true
 
     assert_equal "EMAIL SEND false · capture", email_delivery_banner_status
+    assert_equal "resend", email_delivery_banner_details.fetch(:connector)
+    assert_equal "Captured", email_delivery_banner_details.fetch(:email_state)
+    assert_equal "Connector: Resend · Emails: Captured", email_delivery_banner_details.fetch(:tooltip)
   end
 
   def test_reports_false_for_non_delivering_methods
     install_action_mailer(:test, true)
 
     assert_equal "EMAIL SEND false · test", email_delivery_banner_status
+    assert_nil email_delivery_banner_details.fetch(:provider_icon)
+    assert_equal "Connector: Unknown · Emails: Captured", email_delivery_banner_details.fetch(:tooltip)
   end
 
   def test_reports_false_when_perform_deliveries_is_disabled

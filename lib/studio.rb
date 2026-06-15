@@ -39,6 +39,14 @@ module Studio
   # NAMES at boot, keeping its own routes intact. New consumers leave it true.
   mattr_accessor :draw_auth_routes, default: true
 
+  # Optional admin Act As / impersonation session conventions. Consumers that
+  # include Studio::Impersonation get current_user layered over true_user with
+  # these session keys, but still own authorization, audit logging, and routes.
+  mattr_accessor :impersonation_target_session_key, default: :impersonated_user_id
+  mattr_accessor :impersonation_actor_session_key,  default: :true_admin_id
+  mattr_accessor :impersonation_started_at_session_key, default: :impersonation_started_at
+  mattr_accessor :impersonation_max_minutes, default: 30
+
   # Default From: for engine-sent mail (magic links). Apps set this to their
   # verified sending address in config/initializers/studio.rb.
   mattr_accessor :mailer_from, default: nil

@@ -1,0 +1,23 @@
+<% details = email_delivery_banner_details %>
+
+<% content = capture do %>
+  <span>Email</span>
+  <span aria-hidden="true"><%= details.fetch(:status_icon) %></span>
+  <% if details[:provider_icon].present? %>
+    <%= image_tag details.fetch(:provider_icon),
+                  alt: "",
+                  "aria-hidden": true,
+                  width: 20,
+                  height: 20,
+                  class: "rounded",
+                  style: "width:20px; height:20px; object-fit:cover;" %>
+  <% else %>
+    <span aria-hidden="true">❓</span>
+  <% end %>
+<% end %>
+
+<%= render "studio/banners/button",
+           href: "/_studio/local_emails",
+           label: "Email",
+           content: content,
+           tooltip: details.fetch(:tooltip) %>

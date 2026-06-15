@@ -4,6 +4,20 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+### Added
+- **Shared operator primitives** under `studio/banners/*` for non-production
+  environment banners, the shared banner button, Dev Mode controls, email
+  connector status, and admin impersonation banners. Consumers can render
+  `studio/banners/environment` and `studio/banners/impersonation`.
+- **`Studio::Impersonation`** opt-in concern for Act As session conventions:
+  `true_user`, `impersonated_user`, `impersonating?`,
+  `start_impersonation_session`, and `clear_impersonation_session`. Consumer
+  apps still own authorization, audit logging, routes, and app-specific safety
+  rules.
+- **`StudioEmailDeliveryHelper#email_delivery_banner_details`** returns the
+  structured connector, provider icon, send/capture state, and tooltip used by
+  the shared email status button.
+
 ## v0.5.9 (2026-06-14)
 
 ### Added

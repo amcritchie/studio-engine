@@ -1,0 +1,4 @@
+<%= render "studio/banners/button",
+           as: :button,
+           label: "DEV MODE",
+           alpine_click: "$store.devMode = !$store.devMode; localStorage.setItem('devMode', $store.devMode)" %>
