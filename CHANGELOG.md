@@ -4,7 +4,14 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.5.10 (2026-06-15)
+
 ### Added
+- **`Studio::AdminModels`** shared controller concern plus shared admin model
+  index/show shells and teams/arenas table partials. Consumer apps define their
+  model registry and scopes locally, while shared pagination, team sorting,
+  sport emoji display, team JSON modal payloads, and model page framing live in
+  the engine.
 - **Shared operator primitives** under `studio/banners/*` for non-production
   environment banners, the shared banner button, Dev Mode controls, email
   connector status, and admin impersonation banners. Consumers can render
