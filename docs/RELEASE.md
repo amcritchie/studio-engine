@@ -8,8 +8,10 @@ agent session without explicit approval.
 
 ## Current Release
 
-The current published release used by local consumers is `v0.5.9`:
+The current published release used by local consumers is `v0.5.10`:
 
+- `tailwindcss-rails` resolves to the maintained v3 line (`~> 3.3`) while the
+  ecosystem defers the larger Tailwind CSS v4 visual migration.
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.
 - `resend` is now a runtime dependency of the engine so consumers do not need
@@ -76,7 +78,7 @@ bundle update studio-engine
 
 Verify each `Gemfile.lock` resolves the published version. For the shared mail
 transport, local email capture, and non-production banner path, consumer apps
-should resolve the current `studio-engine 0.5.9` release.
+should resolve the current `studio-engine 0.5.10` release.
 
 Then run the consumer smoke checks:
 

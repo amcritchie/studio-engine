@@ -22,7 +22,7 @@ Gem::Specification.new do |spec|
   spec.require_paths = ["lib"]
 
   spec.add_dependency "rails", ">= 7.0", "< 8.0"
-  spec.add_dependency "tailwindcss-rails", "~> 2.7"
+  spec.add_dependency "tailwindcss-rails", "~> 3.3"
   spec.add_dependency "faker", ">= 2.0", "< 4.0"
   spec.add_dependency "solid_queue", ">= 1.0", "< 2.0"
   spec.add_dependency "aws-sdk-s3", "~> 1.218"

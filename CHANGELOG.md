@@ -4,6 +4,13 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.5.10 (2026-06-15)
+
+### Changed
+- Bump `tailwindcss-rails` from `~> 2.7` to `~> 3.3`, keeping consumers on
+  Tailwind CSS v3 while refreshing the Rails gem/CLI packaging before any
+  future Tailwind v4 visual migration.
+
 ## v0.5.9 (2026-06-14)
 
 ### Added
