@@ -6,11 +6,11 @@ Troubleshooting guide for autonomous agents. Format: problem, diagnosis, fix.
 
 **`Bundler::GemNotFound` for studio**
 - Diagnosis: Gemfile expects `studio-engine` from RubyGems but Bundler cannot resolve it. Network, RubyGems, or lockfile issue.
-- Fix: Check `gem "studio-engine", "~> 0.5"` is in the consuming app's Gemfile. Run `bundle install --verbose`. If a just-published release is missing, confirm RubyGems shows it before retrying.
+- Fix: Check `gem "studio-engine", "~> 0.6"` is in the consuming app's Gemfile. Run `bundle install --verbose`. If a just-published release is missing, confirm RubyGems shows it before retrying.
 
 **Engine classes not available (NameError)**
 - Diagnosis: `ErrorLog`, `Sluggable`, or `Studio::ErrorHandling` not found. Engine not loaded.
-- Fix: Verify `gem "studio-engine", "~> 0.5"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
+- Fix: Verify `gem "studio-engine", "~> 0.6"` is in the consuming app's Gemfile. Run `bundle install`. Check `config/initializers/studio.rb` exists with a `Studio.configure` block. Verify `Studio.routes(self)` is in `config/routes.rb`.
 
 **`Studio` constant undefined at boot**
 - Diagnosis: Initializer runs before engine loads.

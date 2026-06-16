@@ -1,15 +1,20 @@
 # Studio Engine Release Runbook
 
 This repo publishes the shared `studio-engine` gem. Consumer apps pull released
-versions from RubyGems with `gem "studio-engine", "~> 0.5"`.
+versions from RubyGems with `gem "studio-engine", "~> 0.6"`.
 
 Do not publish, push tags, deploy consumers, or rotate credentials from an
 agent session without explicit approval.
 
 ## Current Release
 
-The current published release used by local consumers is `v0.5.9`:
+The current published release used by local consumers is `v0.6.0`:
 
+- `tailwindcss-rails ~> 4.5` is the shared Tailwind CSS v4 build-chain
+  dependency for Studio apps.
+- `Studio::AdminModels`, shared operator banners, shared Dev Mode controls,
+  and shared impersonation banner primitives are available for consumers on
+  `0.5.10`.
 - `Studio::MailTransport` selects SES SMTP or Resend through ActionMailer.
 - Shared `ses:check` and `ses:verify_domain` Rake tasks.
 - `resend` is now a runtime dependency of the engine so consumers do not need
@@ -19,7 +24,7 @@ The current published release used by local consumers is `v0.5.9`:
 - `StudioEmailDeliveryHelper#email_delivery_banner_status` provides shared
   non-production mail-state banner text for consumers on `0.5.8`.
 - `email:smoke[to@example.com]` sends a direct provider smoke-test message and
-  refuses swallowed/captured delivery modes by default for consumers on `0.5.9`.
+  refuses swallowed/captured delivery modes by default.
 
 If additional engine changes are added before publish, review whether this
 should remain a patch release or move to the next minor.
@@ -76,7 +81,7 @@ bundle update studio-engine
 
 Verify each `Gemfile.lock` resolves the published version. For the shared mail
 transport, local email capture, and non-production banner path, consumer apps
-should resolve the current `studio-engine 0.5.9` release.
+should resolve the current `studio-engine 0.6.0` release.
 
 Then run the consumer smoke checks:
 

@@ -1,8 +1,14 @@
 # Changelog
 
-The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.5"`; bumping the gem version and updating consumer lockfiles is a release.
+The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
 ## Unreleased
+
+## v0.6.0 (2026-06-16)
+
+### Changed
+- Require `tailwindcss-rails ~> 4.5` so Studio apps can move onto the
+  Tailwind CSS v4 build chain together.
 
 ## v0.5.10 (2026-06-15)
 

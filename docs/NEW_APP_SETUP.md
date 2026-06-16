@@ -26,10 +26,10 @@ Use the first port in the range as the primary callback-ready server. Reserve th
 
 ```ruby
 # Studio engine
-gem "studio-engine", "~> 0.5"
+gem "studio-engine", "~> 0.6"
 
 # CSS
-gem "tailwindcss-rails", "~> 2.7"
+gem "tailwindcss-rails", "~> 4.5"
 
 # Password hashing (only if enabling Studio.auth_methods :password)
 # gem "bcrypt", "~> 3.1.7"
