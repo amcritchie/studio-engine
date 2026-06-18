@@ -1,6 +1,6 @@
 # Consumer CI — runs both consumer Rails apps' test suites against THIS engine
 # commit, so a PR/merge that breaks `mcritchie_studio` or `turf_monster` fails
-# here instead of silently after a `bundle update studio` on the consumer side.
+# here instead of silently after a `bundle update studio-engine` on the consumer side.
 #
 # Operator setup (one-time, in studio repo Settings → Secrets and variables → Actions):
 #   CONSUMER_REPO_TOKEN — personal access token (classic) with `repo` scope,
@@ -11,11 +11,12 @@
 # How it works:
 #   1. Checks out this engine PR/commit into ./studio
 #   2. Checks out the consumer repo into ./<consumer>
-#   3. Rewrites the consumer's Gemfile `studio` entry to `path: "../studio"`
+#   3. Rewrites the consumer's Gemfile `studio-engine` entry to
+#      `path: "../studio"`
 #      (matches the local engine HEAD, not whatever tag the consumer pinned)
 #   4. Runs the consumer's standard test suite
 #
-# Add a new consumer: append its repo name to the matrix.
+# Add a new consumer: append its repo and local label to the matrix.
 
 name: Consumer CI
 
@@ -30,7 +31,11 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        consumer: [mcritchie_studio, turf_monster]
+        include:
+          - consumer: mcritchie_studio
+            repo: mcritchie-studio
+          - consumer: turf_monster
+            repo: turf-monster
     runs-on: ubuntu-latest
 
     services:
@@ -55,7 +60,7 @@ jobs:
       - name: Checkout ${{ matrix.consumer }}
         uses: actions/checkout@v4
         with:
-          repository: amcritchie/${{ matrix.consumer }}
+          repository: amcritchie/${{ matrix.repo }}
           path: ${{ matrix.consumer }}
           token: ${{ secrets.CONSUMER_REPO_TOKEN || github.token }}
 
@@ -65,14 +70,15 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.1.7
+          ruby-version: 3.3.11
           working-directory: ${{ matrix.consumer }}
 
       - name: Point consumer Gemfile at this engine commit
         working-directory: ${{ matrix.consumer }}
         run: |
-          # Replace the `gem "studio", git: "..."` line with a local path ref
-          sed -i.bak 's|^gem "studio".*|gem "studio", path: "../studio"|' Gemfile
+          # Replace the `gem "studio-engine", ...` line with a local path ref.
+          sed -i.bak 's|^gem "studio-engine".*|gem "studio-engine", path: "../studio"|' Gemfile
+          grep -q '^gem "studio-engine", path: "../studio"$' Gemfile
           rm -f Gemfile.lock  # force fresh resolution
           bundle install --jobs 4 --retry 2
 
