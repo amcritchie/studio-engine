@@ -14,8 +14,8 @@
 #   3. Rewrites the consumer's Gemfile `studio-engine` entry to
 #      `path: "../studio"`
 #      (matches the local engine HEAD, not whatever tag the consumer pinned)
-#   4. Updates only the engine entry, preserving the consumer lockfile's
-#      unrelated dependency pins
+#   4. Installs against the existing consumer lockfile, preserving unrelated
+#      dependency pins
 #   5. Generates any non-secret test-only env the consumer needs
 #   6. Runs the consumer's standard test suite
 #
@@ -86,7 +86,6 @@ jobs:
           # Replace the `gem "studio-engine", ...` line with a local path ref.
           sed -i.bak 's|^gem "studio-engine".*|gem "studio-engine", path: "../studio"|' Gemfile
           grep -q '^gem "studio-engine", path: "../studio"$' Gemfile
-          bundle update studio-engine --jobs 4 --retry 2
           bundle install --jobs 4 --retry 2
 
       - name: Generate test-only Solana admin key
@@ -94,6 +93,7 @@ jobs:
         working-directory: ${{ matrix.consumer }}
         run: |
           admin_key="$(bundle exec ruby -e 'require "solana_studio"; kp = Solana::Keypair.generate; print Solana::Keypair.encode_base58(kp.to_bytes)')"
+          echo "::add-mask::$admin_key"
           printf 'SOLANA_ADMIN_KEY=%s\n' "$admin_key" >> "$GITHUB_ENV"
 
       - name: Prepare test DB + run tests
