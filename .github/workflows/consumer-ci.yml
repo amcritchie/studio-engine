@@ -14,7 +14,8 @@
 #   3. Rewrites the consumer's Gemfile `studio-engine` entry to
 #      `path: "../studio"`
 #      (matches the local engine HEAD, not whatever tag the consumer pinned)
-#   4. Runs the consumer's standard test suite
+#   4. Generates any non-secret test-only env the consumer needs
+#   5. Runs the consumer's standard test suite
 #
 # Add a new consumer: append its repo and local label to the matrix.
 
@@ -34,8 +35,12 @@ jobs:
         include:
           - consumer: mcritchie_studio
             repo: mcritchie-studio
+            managed_wallet_encryption_key: ""
+            needs_solana_admin_key: false
           - consumer: turf_monster
             repo: turf-monster
+            managed_wallet_encryption_key: ci-test-only-managed-wallet-key-not-a-real-secret
+            needs_solana_admin_key: true
     runs-on: ubuntu-latest
 
     services:
@@ -82,13 +87,20 @@ jobs:
           rm -f Gemfile.lock  # force fresh resolution
           bundle install --jobs 4 --retry 2
 
+      - name: Generate test-only Solana admin key
+        if: ${{ matrix.needs_solana_admin_key }}
+        working-directory: ${{ matrix.consumer }}
+        run: |
+          admin_key="$(bundle exec ruby -e 'require "solana_studio"; kp = Solana::Keypair.generate; print Solana::Keypair.encode_base58(kp.to_bytes)')"
+          printf 'SOLANA_ADMIN_KEY=%s\n' "$admin_key" >> "$GITHUB_ENV"
+
       - name: Prepare test DB + run tests
         working-directory: ${{ matrix.consumer }}
         env:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
           REDIS_URL: redis://localhost:6379/0
-          RAILS_MASTER_KEY: ${{ secrets[format('{0}_RAILS_MASTER_KEY', matrix.consumer)] || '0' }}
+          MANAGED_WALLET_ENCRYPTION_KEY: ${{ matrix.managed_wallet_encryption_key }}
         run: |
           bundle exec rails db:test:prepare
           bundle exec rails test
