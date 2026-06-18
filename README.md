@@ -11,7 +11,7 @@ Shared Rails engine for McRitchie apps. Provides authentication, error handling,
 gem "studio-engine", "~> 0.6"
 ```
 
-Then `bundle install`. The current release is **v0.6.0**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
+Then `bundle install`. The current release is **v0.6.1**; see [`CHANGELOG.md`](./CHANGELOG.md) for the history.
 
 > Published to RubyGems as of v0.4.0 (2026-05-17). New installs should use the RubyGems form, which the consumer Rails apps (`mcritchie-studio`, `turf-monster`) already use.
 
