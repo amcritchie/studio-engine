@@ -38,10 +38,12 @@ jobs:
           - consumer: mcritchie_studio
             repo: mcritchie-studio
             managed_wallet_encryption_key: ""
+            needs_rails_credentials: false
             needs_solana_admin_key: false
           - consumer: turf_monster
             repo: turf-monster
             managed_wallet_encryption_key: ci-test-only-managed-wallet-key-not-a-real-secret
+            needs_rails_credentials: true
             needs_solana_admin_key: true
     runs-on: ubuntu-latest
 
@@ -95,6 +97,19 @@ jobs:
           admin_key="$(bundle exec ruby -e 'require "solana_studio"; kp = Solana::Keypair.generate; print Solana::Keypair.encode_base58(kp.to_bytes)')"
           echo "::add-mask::$admin_key"
           printf 'SOLANA_ADMIN_KEY=%s\n' "$admin_key" >> "$GITHUB_ENV"
+
+      - name: Generate test-only Rails credentials
+        if: ${{ matrix.needs_rails_credentials }}
+        working-directory: ${{ matrix.consumer }}
+        run: |
+          master_key="$(ruby -e 'require "securerandom"; print SecureRandom.hex(16)')"
+          secret_key_base="$(ruby -e 'require "securerandom"; print SecureRandom.hex(64)')"
+          echo "::add-mask::$master_key"
+          echo "::add-mask::$secret_key_base"
+          printf 'RAILS_MASTER_KEY=%s\n' "$master_key" >> "$GITHUB_ENV"
+          printf '%s' "$master_key" > config/master.key
+          CI_SECRET_KEY_BASE="$secret_key_base" bundle exec ruby -e 'require "active_support/encrypted_file"; require "yaml"; encrypted = ActiveSupport::EncryptedFile.new(content_path: "config/credentials.yml.enc", key_path: "config/master.key", env_key: "RAILS_MASTER_KEY", raise_if_missing_key: true); encrypted.write({ "secret_key_base" => ENV.fetch("CI_SECRET_KEY_BASE") }.to_yaml)'
+          bundle exec rails runner 'raise "missing test secret_key_base" if Rails.application.credentials.secret_key_base.blank?'
 
       - name: Prepare test DB + run tests
         working-directory: ${{ matrix.consumer }}
