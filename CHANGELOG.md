@@ -4,6 +4,13 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.6.1 (2026-06-18)
+
+### Added
+- **`components/emoji_swap` UI primitive** plus shared CSS for nav/sidebar
+  emoji hover and focus transitions, including reduced-motion fallback and
+  aliases for the existing `nav-emoji-*` class names.
+
 ## v0.6.0 (2026-06-16)
 
 ### Changed

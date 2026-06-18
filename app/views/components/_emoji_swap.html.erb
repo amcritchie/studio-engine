@@ -1,0 +1,17 @@
+<%# locals: (base:, hover:, aria_label: nil, class_name: nil) %>
+<%
+  wrapper_classes = ["studio-emoji-swap", "flex-shrink-0", local_assigns[:class_name]].compact_blank.join(" ")
+  attrs = { class: wrapper_classes }
+
+  if local_assigns[:aria_label].present?
+    attrs[:role] = "img"
+    attrs["aria-label"] = aria_label
+  else
+    attrs["aria-hidden"] = "true"
+  end
+%>
+
+<%= tag.span(**attrs) do %>
+  <span class="studio-emoji-swap-base" aria-hidden="true"><%= base %></span>
+  <span class="studio-emoji-swap-hover" aria-hidden="true"><%= hover %></span>
+<% end %>

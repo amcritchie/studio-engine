@@ -1,6 +1,6 @@
 # Consumer CI — runs both consumer Rails apps' test suites against THIS engine
 # commit, so a PR/merge that breaks `mcritchie_studio` or `turf_monster` fails
-# here instead of silently after a `bundle update studio` on the consumer side.
+# here instead of silently after a `bundle update studio-engine` on the consumer side.
 #
 # Operator setup (one-time, in studio repo Settings → Secrets and variables → Actions):
 #   CONSUMER_REPO_TOKEN — personal access token (classic) with `repo` scope,
@@ -11,11 +11,15 @@
 # How it works:
 #   1. Checks out this engine PR/commit into ./studio
 #   2. Checks out the consumer repo into ./<consumer>
-#   3. Rewrites the consumer's Gemfile `studio` entry to `path: "../studio"`
+#   3. Rewrites the consumer's Gemfile `studio-engine` entry to
+#      `path: "../studio"`
 #      (matches the local engine HEAD, not whatever tag the consumer pinned)
-#   4. Runs the consumer's standard test suite
+#   4. Installs against the existing consumer lockfile, preserving unrelated
+#      dependency pins
+#   5. Generates any non-secret test-only env the consumer needs
+#   6. Runs the consumer's standard test suite
 #
-# Add a new consumer: append its repo name to the matrix.
+# Add a new consumer: append its repo and local label to the matrix.
 
 name: Consumer CI
 
@@ -30,7 +34,17 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        consumer: [mcritchie_studio, turf_monster]
+        include:
+          - consumer: mcritchie_studio
+            repo: mcritchie-studio
+            managed_wallet_encryption_key: ""
+            needs_rails_credentials: false
+            needs_solana_admin_key: false
+          - consumer: turf_monster
+            repo: turf-monster
+            managed_wallet_encryption_key: ci-test-only-managed-wallet-key-not-a-real-secret
+            needs_rails_credentials: true
+            needs_solana_admin_key: true
     runs-on: ubuntu-latest
 
     services:
@@ -55,7 +69,7 @@ jobs:
       - name: Checkout ${{ matrix.consumer }}
         uses: actions/checkout@v4
         with:
-          repository: amcritchie/${{ matrix.consumer }}
+          repository: amcritchie/${{ matrix.repo }}
           path: ${{ matrix.consumer }}
           token: ${{ secrets.CONSUMER_REPO_TOKEN || github.token }}
 
@@ -65,16 +79,37 @@ jobs:
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
-          ruby-version: 3.1.7
+          ruby-version: 3.3.11
           working-directory: ${{ matrix.consumer }}
 
       - name: Point consumer Gemfile at this engine commit
         working-directory: ${{ matrix.consumer }}
         run: |
-          # Replace the `gem "studio", git: "..."` line with a local path ref
-          sed -i.bak 's|^gem "studio".*|gem "studio", path: "../studio"|' Gemfile
-          rm -f Gemfile.lock  # force fresh resolution
+          # Replace the `gem "studio-engine", ...` line with a local path ref.
+          sed -i.bak 's|^gem "studio-engine".*|gem "studio-engine", path: "../studio"|' Gemfile
+          grep -q '^gem "studio-engine", path: "../studio"$' Gemfile
           bundle install --jobs 4 --retry 2
+
+      - name: Generate test-only Solana admin key
+        if: ${{ matrix.needs_solana_admin_key }}
+        working-directory: ${{ matrix.consumer }}
+        run: |
+          admin_key="$(bundle exec ruby -e 'require "solana_studio"; kp = Solana::Keypair.generate; print Solana::Keypair.encode_base58(kp.to_bytes)')"
+          echo "::add-mask::$admin_key"
+          printf 'SOLANA_ADMIN_KEY=%s\n' "$admin_key" >> "$GITHUB_ENV"
+
+      - name: Generate test-only Rails credentials
+        if: ${{ matrix.needs_rails_credentials }}
+        working-directory: ${{ matrix.consumer }}
+        run: |
+          master_key="$(ruby -e 'require "securerandom"; print SecureRandom.hex(16)')"
+          secret_key_base="$(ruby -e 'require "securerandom"; print SecureRandom.hex(64)')"
+          echo "::add-mask::$master_key"
+          echo "::add-mask::$secret_key_base"
+          printf 'RAILS_MASTER_KEY=%s\n' "$master_key" >> "$GITHUB_ENV"
+          printf '%s' "$master_key" > config/master.key
+          CI_SECRET_KEY_BASE="$secret_key_base" bundle exec ruby -e 'require "active_support/encrypted_file"; require "yaml"; encrypted = ActiveSupport::EncryptedFile.new(content_path: "config/credentials.yml.enc", key_path: "config/master.key", env_key: "RAILS_MASTER_KEY", raise_if_missing_key: true); encrypted.write({ "secret_key_base" => ENV.fetch("CI_SECRET_KEY_BASE") }.to_yaml)'
+          bundle exec rails runner 'raise "missing test secret_key_base" if Rails.application.credentials.secret_key_base.blank?'
 
       - name: Prepare test DB + run tests
         working-directory: ${{ matrix.consumer }}
@@ -82,7 +117,7 @@ jobs:
           RAILS_ENV: test
           DATABASE_URL: postgres://postgres:postgres@localhost:5432
           REDIS_URL: redis://localhost:6379/0
-          RAILS_MASTER_KEY: ${{ secrets[format('{0}_RAILS_MASTER_KEY', matrix.consumer)] || '0' }}
+          MANAGED_WALLET_ENCRYPTION_KEY: ${{ matrix.managed_wallet_encryption_key }}
         run: |
           bundle exec rails db:test:prepare
           bundle exec rails test
