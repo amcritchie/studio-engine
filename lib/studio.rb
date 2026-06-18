@@ -20,6 +20,7 @@ module Studio
   mattr_accessor :sso_logo,            default: nil
   mattr_accessor :wallet_address_method, default: nil
   mattr_accessor :theme_logos,         default: []
+  mattr_accessor :sticky_table_headers, default: false
 
   # ---- Authentication ------------------------------------------------------
   # Which sign-in methods this app offers. The shared login/signup views render

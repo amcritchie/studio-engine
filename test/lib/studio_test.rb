@@ -11,6 +11,7 @@ class StudioTest < Minitest::Test
     Studio.sso_logo            = nil
     Studio.wallet_address_method = nil
     Studio.theme_logos         = []
+    Studio.sticky_table_headers = false
     Studio.theme_primary       = "#8E82FE"
     Studio.theme_dark          = "#1A1535"
     Studio.theme_light         = "#f8fafc"
@@ -66,6 +67,11 @@ class StudioTest < Minitest::Test
     assert_equal logos, Studio.theme_logos
   end
 
+  def test_configure_enables_sticky_table_headers
+    Studio.configure { |config| config.sticky_table_headers = true }
+    assert_equal true, Studio.sticky_table_headers
+  end
+
   # ── default values ──────────────────────────────────────────
 
   def test_default_app_name
@@ -90,6 +96,10 @@ class StudioTest < Minitest::Test
 
   def test_default_theme_logos
     assert_equal [], Studio.theme_logos
+  end
+
+  def test_default_sticky_table_headers
+    refute Studio.sticky_table_headers
   end
 
   def test_default_theme_primary

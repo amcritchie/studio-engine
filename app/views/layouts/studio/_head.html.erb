@@ -107,4 +107,10 @@
 
 <%= stylesheet_link_tag "tailwind", "data-turbo-track": "reload" %>
 <%= stylesheet_link_tag "application", "data-turbo-track": "reload" %>
+<% if Studio.sticky_table_headers %>
+  <%= stylesheet_link_tag "studio/sticky_table_header", "data-turbo-track": "reload" %>
+<% end %>
 <%= javascript_importmap_tags %>
+<% if Studio.sticky_table_headers %>
+  <%= javascript_include_tag "studio/sticky_table_header", defer: true, "data-turbo-track": "reload" %>
+<% end %>
