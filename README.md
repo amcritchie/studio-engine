@@ -20,6 +20,7 @@ Then `bundle install`. The current release is **v0.6.0**; see [`CHANGELOG.md`](.
 - **Authentication**: Passwordless magic-link auth, optional password auth, Google OAuth via OmniAuth, Solana wallet sign-in, and optional one-way SSO patterns
 - **Error handling**: `Studio::ErrorHandling` concern with `rescue_and_log`, `ErrorLog` model with `capture!`, error log viewer at `/error_logs`
 - **Theme system**: Dynamic CSS custom properties generated from 7 role colors (primary, dark, light, success, accent, warning, danger). Dark/light mode toggle. Admin theme editor at `/admin/theme`.
+- **UI primitives**: Shared component partials and CSS primitives such as `components/emoji_swap` for nav/sidebar emoji hover transitions.
 - **Operator tooling**: Shared `studio/banners/environment` banner with Dev Mode + email connector controls, `studio/banners/impersonation`, and an opt-in `Studio::Impersonation` concern for Act As session conventions.
 - **Sluggable concern**: `before_save :set_slug` with `to_param` for human-readable URLs
 - **ThemeSetting model**: Per-app DB overrides with fallback to config defaults
@@ -110,6 +111,19 @@ The concern adds `true_user`, `impersonated_user`, `impersonating?`,
 audit log, enter/exit controller actions, and any app-specific safeguards such
 as binding session-token checks to `true_user` or disabling wallet-only
 privileges while impersonating.
+
+## UI Primitives
+
+Render `components/emoji_swap` inside a link or button with the `group` class to
+slide between two emoji on hover and keyboard focus. The CSS ships through
+`studio_theme_css_tag`, including a reduced-motion fade fallback.
+
+```erb
+<%= link_to root_path, class: "group inline-flex items-center gap-2" do %>
+  <%= render "components/emoji_swap", base: "📊", hover: "✨" %>
+  <span>Dashboard</span>
+<% end %>
+```
 
 ## Overriding Views
 

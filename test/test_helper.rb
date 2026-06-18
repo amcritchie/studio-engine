@@ -16,6 +16,7 @@ require "active_support/core_ext/object/blank"
 require_relative "../lib/studio/version"
 require_relative "../lib/studio/color_scale"
 require_relative "../lib/studio/theme_resolver"
+require_relative "../lib/studio/ui_primitives"
 require_relative "../lib/studio/email"
 require_relative "../lib/studio/email_smoke"
 
