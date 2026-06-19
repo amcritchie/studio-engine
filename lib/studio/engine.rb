@@ -1,5 +1,12 @@
 module Studio
   class Engine < ::Rails::Engine
+    initializer "studio.assets" do |app|
+      app.config.assets.precompile += %w[
+        studio/sticky_table_header.css
+        studio/sticky_table_header.js
+      ]
+    end
+
     rake_tasks do
       load File.expand_path("../tasks/studio_email.rake", __dir__)
       load File.expand_path("../tasks/studio_ses.rake", __dir__)

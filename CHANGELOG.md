@@ -4,6 +4,14 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.6.2 (2026-06-19)
+
+### Added
+- **`Studio.sticky_table_headers` opt-in** for shared sticky table headers. The
+  flag defaults off and, when enabled by a consumer app, loads the engine-owned
+  `studio/sticky_table_header.css` and `studio/sticky_table_header.js` assets
+  from the shared Studio head partial.
+
 ## v0.6.1 (2026-06-18)
 
 ### Added
