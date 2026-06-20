@@ -13,6 +13,7 @@ module Studio
 
     included do
       before_action :set_model_config, only: :show
+      helper Studio::AdminModelsTableHelper
       helper_method :team_sort_url, :team_sort_indicator, :team_sport_emoji,
                     :team_record_json, :admin_models_table_partial
     end
