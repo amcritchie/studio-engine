@@ -4,6 +4,16 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## v0.7.0 (2026-06-20)
+
+### Added
+- **`admin_model_table` helper** (`Studio::AdminModelsTableHelper`) — a shared
+  shell for `/admin/models` tables (overflow wrapper, `thead`, hover rows,
+  colspan empty state). Each consumer `_<key>_table` partial now declares only
+  its columns via `headers:` plus a per-row block; the helper is exposed
+  automatically through the `Studio::AdminModels` concern. Removes the duplicated
+  table boilerplate across mcritchie-studio and turf-monster.
+
 ## v0.6.2 (2026-06-19)
 
 ### Added
