@@ -25,6 +25,6 @@ class UserMailer < ApplicationMailer
   # the :database scheme, the legacy /magic_link/<token> for :signed. The
   # request side (MagicLinksController#issue_magic_link) mints the matching token.
   def magic_link_url_for(token)
-    Studio.magic_link_store == :database ? link_url(token: token) : magic_link_url(token: token)
+    Studio.magic_link_via_l_route? ? link_url(token: token) : magic_link_url(token: token)
   end
 end

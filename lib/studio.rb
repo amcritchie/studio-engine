@@ -150,6 +150,15 @@ module Studio
     auth_methods.include?(method.to_sym)
   end
 
+  # True when the emailed/inbox magic-link URL is the short /l/<token> — i.e.
+  # magic links are Studio::Link rows AND this app draws the /l routes. False =
+  # the legacy /magic_link/<token> path: the :signed store, OR an app on the
+  # :database store that keeps its own /magic_link route (e.g. turf-monster,
+  # whose /l is already its landing-page namespace).
+  def self.magic_link_via_l_route?
+    magic_link_store == :database && draw_link_routes
+  end
+
   def self.local_email_capture?
     return false if defined?(Rails) && Rails.respond_to?(:env) && Rails.env.production?
     return !!local_email_capture unless local_email_capture.nil?
