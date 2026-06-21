@@ -58,7 +58,7 @@ module Studio
     # (slug) when available, else the link token. Capped to 64 chars.
     def capture_referral(link)
       inviter = link.linkable
-      ref = inviter.respond_to?(:slug) ? inviter.slug : link.token
+      ref = (inviter.respond_to?(:slug) && inviter.slug.presence) || link.token
       cookies[:reference] = { value: ref.to_s.first(64), expires: 30.days, same_site: :lax }
     end
   end

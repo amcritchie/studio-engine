@@ -84,7 +84,10 @@ module Studio
       path =
         case record.email_key
         when /#magic_link\z/
-          "/magic_link/#{ERB::Util.url_encode(token)}"
+          # Match the configured store: /l/<token> for Studio::Link (:database),
+          # the legacy /magic_link/<token> for the signed MessageVerifier scheme.
+          base = Studio.magic_link_store == :database ? "/l" : "/magic_link"
+          "#{base}/#{ERB::Util.url_encode(token)}"
         when /#email_verification\z/
           "/email_verification/#{ERB::Util.url_encode(token)}"
         when /#wallet_export\z/
