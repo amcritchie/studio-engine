@@ -291,6 +291,13 @@ module Studio
       patch "admin/theme",            to: "theme_settings#update",     as: :admin_theme_update
       post  "admin/theme/regenerate", to: "theme_settings#regenerate", as: :admin_theme_regenerate
       get   "admin/schema",           to: "schema#index",              as: :admin_schema
+
+      # Admin-managed transactional-email banner images (Studio::EmailImage).
+      # index lists each managed email variant + its current banner; update
+      # uploads a replacement. Surfaced from each app's admin hub.
+      get   "admin/email_images",          to: "studio/email_images#index",  as: :admin_email_images
+      patch "admin/email_images/:variant", to: "studio/email_images#update",  as: :admin_email_image,
+            constraints: { variant: /[a-z_]+/ }
     end
   end
 end
