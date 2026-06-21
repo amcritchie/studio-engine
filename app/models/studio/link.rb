@@ -48,16 +48,18 @@ module Studio
         )
       end
 
-      # A user's referral link is stable + reusable: reuse the existing live one
-      # or mint a new one. `target` is an optional same-origin landing path the
+      # A user's referral link is stable + reusable, keyed by its landing target
+      # so sharing contest A vs B yields distinct (but each stable) links — both
+      # crediting the same inviter. `target` is an optional same-origin path the
       # referral redirects to (e.g. a specific contest).
       def referral_for(linkable, target: nil)
-        referrals.where(linkable: linkable).live.order(:created_at).first ||
+        wanted = Studio::LinkToken.sanitize_path(target)
+        referrals.where(linkable: linkable).live.detect { |link| link.target == wanted } ||
           mint!(
             kind: "referral",
             linkable: linkable,
             expires_at: nil,
-            metadata: { "target" => Studio::LinkToken.sanitize_path(target) }.compact
+            metadata: { "target" => wanted }.compact
           )
       end
 
