@@ -36,11 +36,25 @@ module Studio
   mattr_accessor :magic_link_ttl,        default: 15.minutes
   mattr_accessor :magic_link_token_name, default: "magic_link_v1"
 
+  # Where magic-link tokens are stored / which URL scheme they use.
+  #   :signed   (default) — stateless MessageVerifier MagicLink service; URL is
+  #             /magic_link/<long token>. No table needed. Back-compat default.
+  #   :database — a Studio::Link row; URL is the short /l/<token>. Requires the
+  #             studio_links table (install the reference migration). The
+  #             unified scheme both apps move to.
+  mattr_accessor :magic_link_store, default: :signed
+
   # Whether Studio.routes draws the magic_link + solana wallet routes. An app that
   # already defines its own auth routes (e.g. turf-monster, which has battle-tested
   # magic_link/solana routes + extras) sets this false to avoid duplicate route
   # NAMES at boot, keeping its own routes intact. New consumers leave it true.
   mattr_accessor :draw_auth_routes, default: true
+
+  # Whether Studio.routes draws the unified /l/<token> link routes
+  # (Studio::LinksController — magic-link confirm/consume + referral redirect).
+  # Default true; an app wanting its own /l handling sets this false and draws
+  # its own routes (it can still reuse Studio::Link + Studio::LinkConsumption).
+  mattr_accessor :draw_link_routes, default: true
 
   # Optional admin Act As / impersonation session conventions. Consumers that
   # include Studio::Impersonation get current_user layered over true_user with
@@ -245,6 +259,19 @@ module Studio
         get  "magic_link/:token", to: "magic_links#confirm",  as: :magic_link,
              constraints: { token: %r{[^/]+} }
         post "magic_link/:token", to: "magic_links#consume",  as: :magic_link_consume,
+             constraints: { token: %r{[^/]+} }
+      end
+
+      # Unified short-token links — /l/<token> for magic sign-in links + referral
+      # links (Studio::Link). Studio::LinksController dispatches by kind: a
+      # magic_link renders the scanner-safe confirm interstitial then POSTs to
+      # consume; a referral captures attribution + redirects. Helpers: link_path
+      # / link_url(token:) and link_consume_path. Drawn for every consumer
+      # (including draw_auth_routes=false apps) unless draw_link_routes is off.
+      if Studio.draw_link_routes
+        get  "l/:token", to: "studio/links#show",    as: :link,
+             constraints: { token: %r{[^/]+} }
+        post "l/:token", to: "studio/links#consume", as: :link_consume,
              constraints: { token: %r{[^/]+} }
       end
 
