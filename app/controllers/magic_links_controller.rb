@@ -14,6 +14,8 @@
 # OVERRIDE this controller in the app and reuse the MagicLink service + the
 # sign_in_existing / sign_up_new building blocks.
 class MagicLinksController < ApplicationController
+  include Studio::LinkConsumption
+
   skip_before_action :require_authentication
   layout false, only: :confirm
 
@@ -23,7 +25,7 @@ class MagicLinksController < ApplicationController
   def create
     email = params[:email].to_s.strip.downcase
     if email.match?(URI::MailTo::EMAIL_REGEXP)
-      token = MagicLink.generate(email: email, return_to: safe_path(params[:return_to]))
+      token = issue_magic_link(email, safe_path(params[:return_to]))
       Studio::Email.deliver(UserMailer, :magic_link, email, token, to: email)
     end
     respond_to do |format|
@@ -57,38 +59,16 @@ class MagicLinksController < ApplicationController
 
   private
 
-  def sign_in_existing(user, result)
-    set_app_session(user)
-    user.update!(email_verified_at: Time.current) if user.respond_to?(:email_verified_at) && user.email_verified_at.blank?
-    redirect_to(safe_path(result.return_to) || root_path, notice: "Signed in. Welcome back!")
-  end
-
-  # Build → configure_new_user → save!. There is no password — email auth is
-  # magic-link only (the password_digest column, if present, stays dormant).
-  def sign_up_new(result)
-    user = User.new(email: result.email)
-    Studio.configure_new_user.call(user)
-    rescue_and_log(target: user) do
-      user.save!
-      user.update!(email_verified_at: Time.current) if user.respond_to?(:email_verified_at)
-      set_app_session(user)
-      redirect_to(safe_path(result.return_to) || root_path, notice: Studio.welcome_message.call(user))
+  # Mint a token in the configured store. Default :signed keeps the legacy
+  # stateless MessageVerifier link (URL: /magic_link/<token>); :database mints a
+  # Studio::Link row (URL: /l/<token>) — the short, unified scheme. The mailer
+  # builds the matching URL (see UserMailer#magic_link). sign_in_existing /
+  # sign_up_new / safe_path come from Studio::LinkConsumption.
+  def issue_magic_link(email, return_to)
+    if Studio.magic_link_store == :database
+      Studio::Link.create_magic_link(email: email, return_to: return_to).token
+    else
+      MagicLink.generate(email: email, return_to: return_to)
     end
-  rescue ActiveRecord::RecordNotUnique
-    # Two valid tokens for the same brand-new email consumed near-simultaneously
-    # both miss find_by and race to save!; the loser hits the unique index.
-    # Benign — the account now exists, so just log the winner in.
-    existing = User.find_by(email: result.email)
-    return sign_in_existing(existing, result) if existing
-
-    redirect_to login_path, alert: "We couldn't finish creating your account. Please try again."
-  rescue StandardError => e
-    Rails.logger.error("[MagicLinksController#consume] signup failed #{e.class}: #{e.message}")
-    redirect_to login_path, alert: "We couldn't finish creating your account. Please try again."
-  end
-
-  def safe_path(path)
-    p = path.to_s
-    p.start_with?("/") && !p.start_with?("//") ? p : nil
   end
 end

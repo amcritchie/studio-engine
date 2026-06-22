@@ -4,6 +4,34 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## 0.8.0 — 2026-06-21
+
+### Added
+- **`Studio::Link` + unified `/l/<token>`** — one short-token model + entry point
+  for both single-use, expiring **magic_link**s and reusable, non-expiring
+  **referral** links. Polymorphic `linkable` (optional), `metadata` jsonb (email/
+  return_to/target/age_attested off the wire), nullable `expires_at`, atomic
+  single-use consume. `Studio::LinkToken` holds the pure token/kind/sanitizer
+  logic (unit-tested without a DB); `Studio::LinksController` dispatches by kind
+  (magic → scanner-safe confirm + POST consume; referral → attribution cookie +
+  redirect). `Studio::LinkConsumption` concern shares sign-in/sign-up. Reference
+  migration `create_studio_links` (installed per app like `studio_email_deliveries`).
+- **`Studio.magic_link_store`** (`:signed` default | `:database`) and
+  **`Studio.draw_link_routes`** flags. `:database` mints `Studio::Link`s and
+  emails the short `/l/<token>` (vs the legacy `/magic_link/<MessageVerifier>`);
+  fully back-compatible — the default leaves existing consumers untouched.
+- **Branded mailer** lifted into the engine: `layouts/branded_mailer` + a branded
+  `UserMailer#magic_link` body (theme-colored button, banner-aware). Apps with
+  their own `UserMailer`/`branded_mailer` still win.
+- **`Studio::EmailImage`** + **`/admin/email_images`** (admin-gated) — manage the
+  banner image on transactional emails (magic-link now; per-variant registry is
+  the extension point). Backed by `Studio::S3` + an owner-less `ImageCache` row
+  (permanent public URL, nil-safe pre-upload).
+
+### Changed
+- `ImageCache#owner` is now optional (+ reference migration to drop the owner
+  `NOT NULL`), so app-global images (e.g. email banners) can be cached.
+
 ## v0.7.0 (2026-06-20)
 
 ### Added

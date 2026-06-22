@@ -1,4 +1,8 @@
 class UserMailer < ApplicationMailer
+  # Branded shell (banner + card) for engine-sent UserMailer emails. An app with
+  # its own UserMailer + branded_mailer layout (e.g. turf-monster) overrides both.
+  layout "branded_mailer"
+
   # Passwordless sign-in link. `email` is a raw string (the recipient may not
   # have an account yet). Token is a signed MagicLink payload (email + return_to
   # + jti, single-use). Clicking the link logs the recipient in or creates their
@@ -7,8 +11,20 @@ class UserMailer < ApplicationMailer
   # Engine GENERIC base. An app needing richer copy (e.g. turf-monster's
   # contest-aware variant) defines its own UserMailer, which wins.
   def magic_link(email, token)
-    @app_name  = Studio.app_name
-    @magic_url = magic_link_url(token: token)
+    @app_name   = Studio.app_name
+    @email      = email
+    @magic_url  = magic_link_url_for(token)
+    @banner_url = Studio::EmailImage.url(:magic_link) # admin-managed; nil renders bannerless
+    @banner_alt = "Your #{@app_name} sign-in link"
     mail(to: email, subject: "Your #{@app_name} sign-in link")
+  end
+
+  private
+
+  # Match the emailed URL to Studio.magic_link_store: the short /l/<token> for
+  # the :database scheme, the legacy /magic_link/<token> for :signed. The
+  # request side (MagicLinksController#issue_magic_link) mints the matching token.
+  def magic_link_url_for(token)
+    Studio.magic_link_via_l_route? ? link_url(token: token) : magic_link_url(token: token)
   end
 end

@@ -84,7 +84,11 @@ module Studio
       path =
         case record.email_key
         when /#magic_link\z/
-          "/magic_link/#{ERB::Util.url_encode(token)}"
+          # /l/<token> only when the app actually emails /l (Studio::Link store +
+          # /l routes drawn); otherwise the legacy /magic_link/<token> — covers the
+          # signed store AND apps like turf-monster that keep their own /magic_link.
+          base = Studio.magic_link_via_l_route? ? "/l" : "/magic_link"
+          "#{base}/#{ERB::Util.url_encode(token)}"
         when /#email_verification\z/
           "/email_verification/#{ERB::Util.url_encode(token)}"
         when /#wallet_export\z/
