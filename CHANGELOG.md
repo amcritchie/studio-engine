@@ -4,6 +4,8 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## 0.8.0 — 2026-06-21
+
 ### Added
 - **`Studio::Link` + unified `/l/<token>`** — one short-token model + entry point
   for both single-use, expiring **magic_link**s and reusable, non-expiring
