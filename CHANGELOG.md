@@ -4,6 +4,27 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## 0.10.0 — 2026-06-24
+
+### Added
+- **Shared websocket / Redis primitive** (`docs/CABLE.md`) — one place for the
+  setup every host app's realtime needs, extracted after a SEV-1 (a host app
+  shipped an ActionCable channel with no `redis` gem and no TLS cable config; the
+  broadcast raised `Gem::LoadError` — a `ScriptError`, not a `StandardError` — which
+  escaped a `rescue StandardError` and 500'd every task write).
+  - **`redis` is now an engine dependency** (plus `turbo-rails`), so a consuming app
+    can never hit that `Gem::LoadError` again.
+  - **`Studio::Redis`** — the single source of Redis connection truth for `cable.yml`,
+    the `cache_store`, and Sidekiq: `.url`, `.tls?`, and `.options(**extra)`, which
+    auto-applies `ssl_params: { verify_mode: VERIFY_NONE }` for Heroku's `rediss://`
+    self-signed TLS (the gotcha that silently drops every broadcast).
+  - **`Studio::Cable.safe_broadcast { … }`** — best-effort broadcast guard that
+    catches `StandardError` **and** `ScriptError`, so a cable failure never breaks
+    the caller (the exact hole that caused the SEV-1).
+  - **`Studio::Broadcastable`** — model concern with safe Turbo-Streams wrappers
+    (`safe_broadcast_replace_to`, `_append_to`, `_prepend_to`, `_update_to`,
+    `_remove_to`) every app should broadcast through.
+
 ## 0.9.0 — 2026-06-23
 
 ### Added
