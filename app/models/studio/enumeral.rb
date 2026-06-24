@@ -68,6 +68,18 @@ module Studio
 
         in_category(category).where(key: key.to_s).limit(1).pick(:color) || fallback
       end
+
+      # { key => emoji } for a category in ONE query — the metadata sibling of
+      # color_map, for decorative glyphs kept in `metadata` rather than a column.
+      def emoji_map(category)
+        catalog(category).pluck(:key, :metadata).to_h { |key, meta| [key, meta && meta["emoji"]] }
+      end
+    end
+
+    # A decorative glyph for the value, kept in `metadata` (not a column) since
+    # it's a presentation extra — e.g. a Pokémon type's emoji. Nil when unset.
+    def emoji
+      metadata && metadata["emoji"]
     end
   end
 end
