@@ -59,6 +59,9 @@ for test_file in \
   test/lib/studio/email_test.rb \
   test/lib/studio/email_smoke_test.rb \
   test/lib/studio/mail_transport_test.rb \
+  test/lib/studio/redis_test.rb \
+  test/lib/studio/cable_test.rb \
+  test/lib/studio/broadcastable_test.rb \
   test/lib/studio_email_delivery_helper_test.rb
 do
   ruby -Itest "$test_file"

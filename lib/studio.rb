@@ -10,6 +10,8 @@ require "studio/link_token"
 require "studio/email"
 require "studio/email_smoke"
 require "studio/mail_transport"
+require "studio/redis"
+require "studio/cable"
 
 module Studio
   mattr_accessor :app_name,            default: "Studio"
