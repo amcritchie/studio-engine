@@ -4,6 +4,24 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## 0.9.0 — 2026-06-23
+
+### Added
+- **`Studio::Enumeral`** — a shared, DB-backed enumeration table for the whole
+  ecosystem. Every "list of fixed, labeled, colored values" (Pokémon types first;
+  statuses/tiers/roles later) is rows in ONE `studio_enumerals` table, grouped by
+  `category`: a stable machine `key`, a human `label`, a `color` hex, a display
+  `position`, a sparse `rank` (gappy 100/200/… domain ranking — e.g. most-common
+  first — distinct from display order), and `metadata` (jsonb) for
+  category-specific extras. Class helpers `catalog`, `lookup`, `color_map` (one
+  query → `{ key => color }`), `color_for(category, key, fallback:)`, and a
+  metadata-backed `emoji` reader + `emoji_map` (decorative glyphs live in
+  `metadata`, not a column); scopes `ordered` / `by_rank`; `available?` degrades
+  to empty when the table isn't installed. Shipped by the gem like `Studio::Link` /
+  `Studio::EmailDelivery` — reference migration `create_studio_enumerals`
+  installed per app (copy into `db/migrate`). No behavior is attached: a consumer
+  adopts a new category by seeding rows, no code change.
+
 ## 0.8.0 — 2026-06-21
 
 ### Added
