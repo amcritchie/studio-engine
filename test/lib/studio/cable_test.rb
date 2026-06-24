@@ -21,4 +21,16 @@ class Studio::CableTest < Minitest::Test
     assert Gem::LoadError.ancestors.include?(ScriptError), "premise: Gem::LoadError is a ScriptError"
     assert_nil(Studio::Cable.safe_broadcast { raise Gem::LoadError, "redis is not part of the bundle" })
   end
+
+  # The guard for the guard: ErrorLog.capture! writes to the DB and can ITSELF raise
+  # (e.g. ActiveRecord::NoDatabaseError when the DB is down). That must not defeat the
+  # never-raise guarantee — if the error path raised, this block would error instead
+  # of returning nil.
+  def test_safe_broadcast_never_raises_even_when_its_own_logging_raises
+    raising_log = Class.new { def self.capture!(_e) = raise("DB down — logging failed") }
+    Object.const_set(:ErrorLog, raising_log)
+    assert_nil(Studio::Cable.safe_broadcast { raise "original broadcast failure" })
+  ensure
+    Object.send(:remove_const, :ErrorLog) if defined?(ErrorLog)
+  end
 end
