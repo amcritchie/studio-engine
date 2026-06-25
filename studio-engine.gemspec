@@ -21,7 +21,7 @@ Gem::Specification.new do |spec|
   spec.files = Dir["lib/**/*", "app/**/*", "config/**/*", "db/**/*", "tailwind/**/*", "Gemfile", "studio-engine.gemspec", "README.md", "CHANGELOG.md", "LICENSE"]
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails", ">= 7.0", "< 8.0"
+  spec.add_dependency "rails", ">= 7.2", "< 8.2"
   spec.add_dependency "tailwindcss-rails", "~> 4.5"
   spec.add_dependency "faker", ">= 2.0", "< 4.0"
   spec.add_dependency "solid_queue", ">= 1.0", "< 2.0"

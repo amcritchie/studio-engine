@@ -4,6 +4,32 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+## 0.11.0 — 2026-06-24
+
+### Changed
+- **Rails 8.1 support** — widened the gemspec `rails` bound from
+  `">= 7.0", "< 8.0"` to `">= 7.2", "< 8.2"`, so consuming apps can migrate to
+  Rails 8.1 independently (the engine no longer pins the ecosystem to Rails 7).
+  This release is the gate for the McRitchie Rails 8.1 train — `mcritchie-studio`
+  and `turf-monster` can bundle Rails 8.1 only once this version is published.
+  The lower bound moves to 7.2 (the oldest Rails the apps actually run) since
+  Rails 8 requires Ruby >= 3.2 and the ecosystem is already on Ruby 3.3.11.
+
+### Added
+- **`test/dummy` Rails app + `test/integration/engine_rails_8_1_boot_test.rb`** —
+  boots the engine inside a real Rails app and exercises its Rails-version-
+  sensitive surfaces (the Railtie registration, Zeitwerk autoload wiring, the
+  `Studio.routes` DSL, and the `ErrorLog` / `ThemeSetting` / `Sluggable`
+  ActiveRecord models). Re-run this against any new Rails line before widening
+  the bound again. The engine's full unit suite + this boot test are green
+  against Rails 8.1.3 (ActiveSupport/ActiveRecord 8.1, Zeitwerk 2.8, minitest 6).
+
+### Fixed
+- `bin/release-check` now prefers the `ruby@3.3` toolchain (was pinned to the
+  retired `ruby@3.1`, which cannot resolve Rails 8.1) and runs the full test
+  list, including the new Rails 8.1 boot test and the previously-omitted
+  `link_token` / sticky-header / admin-models-table tests.
+
 ## 0.10.0 — 2026-06-24
 
 ### Added
