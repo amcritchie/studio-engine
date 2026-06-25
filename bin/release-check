@@ -4,8 +4,11 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-if [ -d /opt/homebrew/opt/ruby@3.1/bin ]; then
-  export PATH="/opt/homebrew/opt/ruby@3.1/bin:/opt/homebrew/lib/ruby/gems/3.1.0/bin:$PATH"
+# The ecosystem runs Ruby 3.3 (brew ruby@3.3). Rails 8.1 — which the gemspec now
+# allows (>= 7.2, < 8.2) — requires Ruby >= 3.2, so prefer the 3.3 toolchain when
+# present rather than the retired 3.1 line.
+if [ -d /opt/homebrew/opt/ruby@3.3/bin ]; then
+  export PATH="/opt/homebrew/opt/ruby@3.3/bin:/opt/homebrew/lib/ruby/gems/3.3.0/bin:$PATH"
 fi
 
 build=0
@@ -62,7 +65,11 @@ for test_file in \
   test/lib/studio/redis_test.rb \
   test/lib/studio/cable_test.rb \
   test/lib/studio/broadcastable_test.rb \
-  test/lib/studio_email_delivery_helper_test.rb
+  test/lib/studio/link_token_test.rb \
+  test/lib/studio_email_delivery_helper_test.rb \
+  test/views/sticky_table_header_assets_test.rb \
+  test/views/admin_models_table_helper_test.rb \
+  test/integration/engine_rails_8_1_boot_test.rb
 do
   ruby -Itest "$test_file"
 done
