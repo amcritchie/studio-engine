@@ -4,6 +4,19 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 
 ## Unreleased
 
+### Added
+- **Model-page protocol (v1)** — a reusable, admin-only per-record inspector,
+  drawn into every consuming app via `Studio.routes`:
+  `/models/:model/:id` renders one record as pretty JSON plus a copy/paste
+  rails-console command to reload it, and `/models/:model/random` bounces to a
+  random record of that model. New `Studio::ModelsController` +
+  `app/views/studio/models/show.html.erb` (theme-token styled, reuses the
+  `components/copy_button` partial). The protocol object `Studio::ModelPage`
+  ships an **empty registry** — no model is reachable until a host opts in with
+  `Studio::ModelPage.register("release", Release, lookup: :slug)` in an
+  initializer (mirrors the admin-models host-registry pattern; the engine never
+  constantizes host models by name). Gated with `require_admin`.
+
 ## 0.11.0 — 2026-06-24
 
 ### Changed

@@ -66,10 +66,12 @@ for test_file in \
   test/lib/studio/cable_test.rb \
   test/lib/studio/broadcastable_test.rb \
   test/lib/studio/link_token_test.rb \
+  test/lib/studio/model_page_test.rb \
   test/lib/studio_email_delivery_helper_test.rb \
   test/views/sticky_table_header_assets_test.rb \
   test/views/admin_models_table_helper_test.rb \
-  test/integration/engine_rails_8_1_boot_test.rb
+  test/integration/engine_rails_8_1_boot_test.rb \
+  test/integration/model_page_routes_test.rb
 do
   ruby -Itest "$test_file"
 done

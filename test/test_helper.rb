@@ -22,6 +22,11 @@ require_relative "../lib/studio/email_smoke"
 require_relative "../lib/studio/redis"
 require_relative "../lib/studio/cable"
 
+# Model-page protocol PORO. Lives under app/models (Zeitwerk-autoloaded in host
+# apps so initializers can register models) but is dependency-free, so the
+# pure-Ruby unit suite requires it directly.
+require_relative "../app/models/studio/model_page"
+
 # Define Studio module attributes without requiring the engine.
 # This mirrors lib/studio.rb but avoids the Rails engine dependency.
 module Studio
