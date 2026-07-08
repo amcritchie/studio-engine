@@ -309,6 +309,16 @@ module Studio
       get   "admin/email_images",          to: "studio/email_images#index",  as: :admin_email_images
       patch "admin/email_images/:variant", to: "studio/email_images#update",  as: :admin_email_image,
             constraints: { variant: /[a-z_]+/ }
+
+      # Model-page protocol (v1) — a reusable per-record inspector. Drawn into
+      # every consuming app: /models/:model/:id renders one record as pretty JSON
+      # plus a copy/paste rails-console command; /models/:model/random bounces to
+      # a random record of that model. Admin-only (Studio::ModelsController).
+      # Ships an EMPTY registry — a host enables a model in an initializer with
+      # `Studio::ModelPage.register("release", Release, lookup: :slug)`. `random`
+      # is drawn BEFORE `:id` so it is not captured as a record identifier.
+      get "models/:model/random", to: "studio/models#random", as: :studio_model_random
+      get "models/:model/:id",    to: "studio/models#show",   as: :studio_model
     end
   end
 end

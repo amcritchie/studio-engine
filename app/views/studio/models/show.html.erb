@@ -1,0 +1,32 @@
+<%# Model-page protocol (v1) — a uniform record inspector: the record as pretty
+    JSON plus a copy/paste rails-console command to reload it, with a jump to a
+    random sample record. Admin-only surface (Studio::ModelsController). The copy
+    button reuses the engine components/copy_button partial. %>
+<% model_label = @page.model.model_name.human %>
+<% content_for(:title, "#{model_label} - Model") %>
+
+<div class="max-w-7xl mx-auto px-4 py-8 space-y-6">
+  <header class="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+    <div>
+      <p class="text-xs text-muted uppercase tracking-wide font-semibold">Model</p>
+      <h1 class="text-heading text-2xl font-bold mt-1"><%= model_label %></h1>
+      <p class="text-muted text-sm mt-1 font-mono"><%= @page.identifier %></p>
+    </div>
+    <%= link_to "🎲 Random sample", studio_model_random_path(@page.model_key), class: "btn btn-outline" %>
+  </header>
+
+  <%# The copy/paste line to reload this record in rails console. %>
+  <section class="card p-4 space-y-2">
+    <p class="text-xs text-muted uppercase tracking-wide font-semibold">Rails console</p>
+    <%= render "components/copy_button", text: @page.console_command %>
+  </section>
+
+  <%# The record serialized as pretty JSON — the protocol's primary payload. %>
+  <section class="card overflow-hidden">
+    <div class="flex items-center justify-between px-4 py-2 bg-surface-alt border-b border-subtle">
+      <p class="text-xs text-muted uppercase tracking-wide font-semibold">JSON</p>
+      <span class="font-mono text-xs text-muted"><%= @page.model.name %></span>
+    </div>
+    <pre class="overflow-x-auto px-4 py-3 text-xs font-mono text-heading leading-relaxed bg-inset"><%= @page.json %></pre>
+  </section>
+</div>
