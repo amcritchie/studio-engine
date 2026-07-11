@@ -2,7 +2,18 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
-## Unreleased
+## 0.12.1 — 2026-07-11
+
+### Fixed
+- **Sticky table headers: skip self-pinning tables** — `shouldEnhanceTable`
+  now declines tables whose header cells are already `position: sticky`
+  (they pin themselves inside their own scroll container). Cloning such a
+  table doubled the header, and the activation math misfired: the in-flow
+  `thead` box scrolls under the nav while the sticky `th` cells stay pinned
+  and visible. Upstreamed from mcritchie-studio's local copy so consumers can
+  drop their forks and enable `Studio.sticky_table_headers`.
+
+## 0.12.0 — 2026-07-08
 
 ### Added
 - **Model-page protocol (v1)** — a reusable, admin-only per-record inspector,
