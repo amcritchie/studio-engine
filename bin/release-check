@@ -24,6 +24,12 @@ case "${1:-}" in
     ;;
 esac
 
+# Explicit XXXXXX template: portable across BSD mktemp (macOS, where a bare
+# `-t prefix` works) and GNU mktemp (ubuntu-latest CI, which rejects a template
+# with too few X's). Getting this wrong reddens the CI lane but not local runs.
+suite_log="$(mktemp "${TMPDIR:-/tmp}/studio-engine-suite.XXXXXX")"
+trap 'rm -f "$suite_log"' EXIT
+
 echo "Ruby: $(ruby -v)"
 echo "Studio Engine: $(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"
 
@@ -80,8 +86,38 @@ for test_file in \
   test/integration/tailwind_probe_build_test.rb \
   test/integration/ui_primitives_render_test.rb
 do
-  ruby -Itest "$test_file"
+  echo "== $test_file"
+  echo "== $test_file" >> "$suite_log"
+  ruby -Itest "$test_file" 2>&1 | tee -a "$suite_log"
 done
+
+# Gate the suite on EVIDENCE, not on the exit status alone. A minitest file
+# that runs zero tests, or that `skip`s its only test, exits 0 — so a suite
+# whose coverage silently evaporated (missing runtime, renamed test method,
+# a file that no longer defines any test_*) reports green. Every enumerated
+# file must produce a summary line, must contribute runs, and must not skip.
+ruby - "$suite_log" <<'GUARD'
+log      = File.read(ARGV[0])
+announced = log.scan(/^== (.+)$/).flatten
+summaries = log.scan(/^(\d+) runs, (\d+) assertions, (\d+) failures, (\d+) errors, (\d+) skips$/)
+
+if summaries.length != announced.length
+  abort "Suite guard: #{announced.length} test files announced but #{summaries.length} " \
+        "minitest summaries found — a file produced no summary (it ran nothing)."
+end
+
+silent = announced.zip(summaries).select { |_file, s| s[0].to_i.zero? }.map(&:first)
+abort "Suite guard: these files ran ZERO tests: #{silent.join(', ')}" if silent.any?
+
+skipped = announced.zip(summaries).select { |_file, s| s[4].to_i.positive? }.map(&:first)
+if skipped.any?
+  abort "Suite guard: these files SKIPPED tests: #{skipped.join(', ')}. A skip reads as a " \
+        "pass — assert the missing precondition instead, or install the runtime it needs."
+end
+
+runs = summaries.sum { |s| s[0].to_i }
+puts "Suite guard: #{announced.length} files, #{runs} runs, 0 skipped, 0 silent."
+GUARD
 
 if [ "$build" -eq 1 ]; then
   version="$(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"

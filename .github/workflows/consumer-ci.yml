@@ -2,6 +2,10 @@
 # commit, so a PR/merge that breaks `mcritchie_studio` or `turf_monster` fails
 # here instead of silently after a `bundle update studio-engine` on the consumer side.
 #
+# This workflow covers the CONSUMERS only. The engine's OWN suite runs in the
+# sibling `engine-ci.yml` lane (`bin/release-check`) — do not assume a green
+# board here means the engine's own tests ran.
+#
 # Operator setup (one-time, in studio repo Settings → Secrets and variables → Actions):
 #   CONSUMER_REPO_TOKEN — personal access token (classic) with `repo` scope,
 #                         so actions/checkout can clone the consumer repos if
