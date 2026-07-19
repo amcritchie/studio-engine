@@ -170,9 +170,31 @@ defaults) and ship the matching CSS class in the app stylesheet:
 </script>
 ```
 
+Prefer an inline script placed before the host render, as above. A module that
+loads after the host (e.g. via importmap) and assigns `window.ModalAnimations`
+**replaces** the merged registry rather than extending it — the host guards
+against this (unknown keys and gutted registries fall back to the built-in
+`'pop'`), but your other custom keys are lost unless the late script merges
+into the existing object instead of assigning over it.
+
 `window.StudioModals.holdAtLeast(ms)` returns a thenable that resolves no
 sooner than `ms` after creation — stamp it when a processing view becomes
 visible so fast operations don't flash the spinner.
+
+**Behavioral deltas vs the previous engine host (0.12 and earlier).** The
+store's API surface is a superset, but three behaviors changed, and a consumer
+deleting its shadow copy inherits them — regression-test these paths rather
+than assuming drop-in equivalence:
+
+- `close()` is now **asynchronous**: the entry animates out and is spliced
+  after its exit animation's registered duration (previously an immediate
+  `pop()`).
+- `close()` **no-ops while the current entry is already closing** — a double
+  `close()` inside the animation window now pops ONE stacked entry, not two —
+  and `close()` on an empty stack no longer runs `_sync()`.
+- `open(id, props, { replace: true })` (and `swap()`) is now **asynchronous**:
+  the replacement lands after the 220ms slide-out (previously an immediate
+  top-of-stack assignment).
 
 ### User nav slots
 

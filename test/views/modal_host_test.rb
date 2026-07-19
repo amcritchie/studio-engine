@@ -74,23 +74,40 @@ class ModalHostTest < Minitest::Test
   # --- animation registry -----------------------------------------------
 
   def test_animation_registry_ships_pop_shake_slide_defaults
-    html = render_host
+    entries = registry_entries(render_host)
 
-    assert_includes html, "pop:   { cls: 'modal-card-mount',    ms: 320 }"
-    assert_includes html, "shake: { cls: 'modal-card-shake-in', ms: 600 }"
-    assert_includes html, "slide: { cls: 'modal-card-swap-in',  ms: 220 }"
-    assert_includes html, "pop:   { cls: 'modal-card-unmount',  ms: 220 }"
-    assert_includes html, "slide: { cls: 'modal-card-swap-out', ms: 220 }"
+    # Whitespace-tolerant parse (exact source columns are not the contract).
+    # The registry's semantics — merge behavior, cardClasses resolution —
+    # are exercised for real in test/views/modal_host_store_behavior_test.rb.
+    assert_equal 320, entries["modal-card-mount"], "enter pop"
+    assert_equal 600, entries["modal-card-shake-in"], "enter shake"
+    assert_equal 220, entries["modal-card-swap-in"], "enter slide"
+    assert_equal 220, entries["modal-card-unmount"], "exit pop"
+    assert_equal 220, entries["modal-card-swap-out"], "exit slide"
   end
 
-  def test_animation_registry_merges_consumer_overrides_over_defaults
+  def test_css_durations_equal_registry_ms_and_store_constants
     html = render_host
+    registry = registry_entries(html)
+    css = css_durations(html)
 
-    # A consumer that predefines window.ModalAnimations before this script
-    # keeps its entries (they win per-channel) without losing the defaults.
-    assert_includes html, "var animOverrides = window.ModalAnimations || {};"
-    assert_includes html, "Object.assign({}, animDefaults.enter, animOverrides.enter || {})"
-    assert_includes html, "Object.assign({}, animDefaults.exit,  animOverrides.exit  || {})"
+    refute_empty registry
+    registry.each do |cls, ms|
+      assert_equal ms, css[cls],
+                   "registry ms for #{cls} must EQUAL its inline CSS animation duration " \
+                   "(the store waits registry ms before splicing — a mismatch truncates or freezes the keyframe)"
+    end
+
+    close_anim_ms = html[/var CLOSE_ANIM_MS = (\d+)/, 1]&.to_i
+    swap_in_ms    = html[/var SWAP_IN_MS\s*= (\d+)/, 1]&.to_i
+    refute_nil close_anim_ms
+    refute_nil swap_in_ms
+    # Phase timing constants must match the keyframes they wait for.
+    assert_equal close_anim_ms, css["modal-card-unmount"], "CLOSE_ANIM_MS vs default exit keyframe"
+    assert_equal close_anim_ms, css["modal-card-swap-out"], "CLOSE_ANIM_MS vs forward slide-out"
+    assert_equal close_anim_ms, css["modal-card-swap-out-back"], "CLOSE_ANIM_MS vs back slide-out"
+    assert_equal swap_in_ms, css["modal-card-swap-in"], "SWAP_IN_MS vs forward slide-in"
+    assert_equal swap_in_ms, css["modal-card-swap-in-back"], "SWAP_IN_MS vs back slide-in"
   end
 
   def test_card_binds_registry_driven_classes
@@ -166,13 +183,33 @@ class ModalHostTest < Minitest::Test
                  "template x-if must have exactly ONE root element"
   end
 
-  def test_no_turf_specific_modals_leak_into_the_engine
-    html = render_host
-
-    refute_includes html, "cosign"
+  def test_host_bakes_in_zero_modal_registrations
+    # Positive invariant (not a spelling blacklist): every modal content
+    # registration is CONSUMER-supplied through the block. The engine host
+    # itself registers none — rendered without a block it contains zero
+    # id-matching registrations; with a block, exactly the one we passed.
+    assert_equal 0, registration_count(render_host)
+    assert_equal 1, registration_count(render_host_with_block)
   end
 
   private
+
+  # { "modal-card-mount" => 320, ... } parsed from the ModalAnimations
+  # registry literals, whitespace-tolerant.
+  def registry_entries(html)
+    html.scan(/\{ cls: '([^']+)',\s*ms: (\d+) \}/).to_h { |cls, ms| [cls, ms.to_i] }
+  end
+
+  # { "modal-card-mount" => 320, ... } parsed from the inline CSS animation
+  # shorthand declarations.
+  def css_durations(html)
+    html.scan(/\.([a-z][a-z-]*)\s*\{ animation: [a-z-]+\s+(\d+)ms/).to_h { |cls, ms| [cls, ms.to_i] }
+  end
+
+  # Count of id-matching modal content registrations in the rendered host.
+  def registration_count(html)
+    html.scan("$store.modals.current().id ===").size
+  end
 
   def render_host
     view.render(partial: "studio/modals/host")

@@ -44,8 +44,10 @@
   <% if logged_in? %>
     <%# Left column: Div 1 + Div 2 stacked %>
     <div class="flex-1">
-      <%# Div 1 (Bigger): balance + icons + username %>
-      <div class="flex items-center gap-2 leading-none" :style="'padding: 0 6px;' + ($store.devMode ? 'background: cornflowerblue;' : '')">
+      <%# Div 1 (Bigger): balance + icons + username. min-w-0 lets the
+          truncate on the username actually shrink inside the flex row
+          (flex items default to min-width auto and refuse to shrink). %>
+      <div class="flex min-w-0 items-center gap-2 leading-none" :style="'padding: 0 6px;' + ($store.devMode ? 'background: cornflowerblue;' : '')">
         <%= studio_nav_slot.call(balance_slot, balance_html) %>
         <div class="flex items-center gap-2 ml-auto self-end">
           <%= studio_nav_slot.call(extra_icons_slot, extra_icons_html) %>

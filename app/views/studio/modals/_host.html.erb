@@ -33,9 +33,10 @@
      falling — much more present than a plain ease. Backdrop stays on a
      clean fade (a bouncing backdrop reads as a bug, not polish).
 
-     Durations: card-out stays at 220ms to match CLOSE_ANIM_MS in the
-     host's store — that's the timeout before the entry is spliced off
-     the stack. Bump CLOSE_ANIM_MS if you lengthen this.
+     Durations: the modal-card-out keyframe stays at 220ms to match
+     CLOSE_ANIM_MS in the host's store — that's the timeout before the
+     entry is spliced off the stack. Bump CLOSE_ANIM_MS if you lengthen
+     this.
 
      Re-skinning: don't fight these classes from an app stylesheet (this
      inline block sits later in the document, so it wins ties). Instead
@@ -207,9 +208,15 @@
       enter: Object.assign({}, animDefaults.enter, animOverrides.enter || {}),
       exit:  Object.assign({}, animDefaults.exit,  animOverrides.exit  || {})
     };
+    // Late-binding guard: read window.ModalAnimations at CALL time, and
+    // never return undefined. A consumer script that loads after this one
+    // (e.g. an importmap module) may REPLACE the merged registry object
+    // wholesale; without the animDefaults fallback a lookup miss would
+    // make close() throw on .ms and leave the modal stuck open. Unknown
+    // keys and gutted registries fall back to the built-in 'pop'.
     function modalAnim(channel, key) {
-      var table = window.ModalAnimations[channel] || {};
-      return table[key] || table.pop;
+      var table = (window.ModalAnimations && window.ModalAnimations[channel]) || {};
+      return table[key] || table.pop || animDefaults[channel].pop;
     }
 
     // === Alpine.store('modals') — the stack ============================
@@ -265,14 +272,17 @@
               setTimeout(function() {
                 // Phase 2: stack swap. New entry carries _swappingIn + the
                 // same _swapDir so the host's :class binding picks the
-                // matching slide-in keyframe.
+                // matching slide-in keyframe. If the marked entry vanished
+                // during the slide-out window (another swap() hot-swapped
+                // it, or a close raced us), DROP this stale replacement —
+                // pushing it would resurrect a modal the user already
+                // navigated past (two swap() calls within CLOSE_ANIM_MS
+                // used to leave both on the stack). Mirrors close()'s
+                // stale-entry guard.
                 var idx = self.stack.indexOf(current);
+                if (idx < 0) return;
                 var newEntry = { id: id, props: props, _swappingIn: true, _swapDir: dir };
-                if (idx >= 0) {
-                  self.stack[idx] = newEntry;
-                } else {
-                  self.stack.push(newEntry);
-                }
+                self.stack[idx] = newEntry;
                 self._sync();
                 // Phase 3: clear the swap-in flag + direction after the
                 // slide finishes so a future close() runs the unmount
@@ -423,10 +433,22 @@
           if (c._closing && !c._swappingOut) {
             o[modalAnim('exit', c.props && c.props.exitAnim).cls] = true;
           }
-          o['modal-card-swap-in']       = !!(c._swappingIn  && c._swapDir !== 'back');
-          o['modal-card-swap-out']      = !!(c._swappingOut && c._swapDir !== 'back');
-          o['modal-card-swap-in-back']  = !!(c._swappingIn  && c._swapDir === 'back');
-          o['modal-card-swap-out-back'] = !!(c._swappingOut && c._swapDir === 'back');
+          // The registry's 'slide' entries resolve to the SAME class names
+          // as the fixed directional flags below (enter.slide is
+          // modal-card-swap-in, exit.slide is modal-card-swap-out). Never
+          // reassign a key the enter/exit resolution above already set —
+          // an unconditional assignment here clobbered those keys to
+          // false, so enterAnim/exitAnim 'slide' produced NO class and
+          // the exit sat motionless for the splice delay, then snapped.
+          var swapFlags = {
+            'modal-card-swap-in':       !!(c._swappingIn  && c._swapDir !== 'back'),
+            'modal-card-swap-out':      !!(c._swappingOut && c._swapDir !== 'back'),
+            'modal-card-swap-in-back':  !!(c._swappingIn  && c._swapDir === 'back'),
+            'modal-card-swap-out-back': !!(c._swappingOut && c._swapDir === 'back')
+          };
+          for (var flag in swapFlags) {
+            if (!(flag in o)) o[flag] = swapFlags[flag];
+          }
           return o;
         },
         _sync: function() {
