@@ -34,6 +34,12 @@ jobs:
       - name: Checkout engine
         uses: actions/checkout@v4
 
+      # Gemfile.lock MUST keep the `x86_64-linux` platform or this step fails
+      # with "your bundle only supports platforms [arm64-darwin-*]" — the lock
+      # is generated on Apple Silicon, and this is the first lane to run the
+      # engine's own bundle on Linux (the consumer lanes bundle in the CONSUMER
+      # repo, where the engine is a path gem, so they never needed it).
+      # If you regenerate the lock, re-run: bundle lock --add-platform x86_64-linux
       - name: Set up Ruby
         uses: ruby/setup-ruby@v1
         with:
