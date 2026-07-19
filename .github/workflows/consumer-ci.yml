@@ -66,12 +66,18 @@ jobs:
         with:
           path: studio
 
+      # fetch-depth: 0 IS LOAD-BEARING — do not "optimize" it back to the default.
+      # The hub's e2e quarantine ratchet (test/lib/e2e_quarantine_ratchet_test.rb)
+      # reads its baseline from `origin/release` inside THIS checkout; the default
+      # depth-1 single-ref fetch leaves that ref unresolvable and the ratchet goes
+      # red by design. Mirrors the hub's own ci.yml, which documents the same trap.
       - name: Checkout ${{ matrix.consumer }}
         uses: actions/checkout@v4
         with:
           repository: amcritchie/${{ matrix.repo }}
           path: ${{ matrix.consumer }}
           token: ${{ secrets.CONSUMER_REPO_TOKEN || github.token }}
+          fetch-depth: 0
 
       - name: Install system packages
         run: sudo apt-get update && sudo apt-get install --no-install-recommends -y libpq-dev libvips imagemagick postgresql-client
