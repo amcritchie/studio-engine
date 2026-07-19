@@ -61,6 +61,7 @@ ruby -rerb -e 'ARGV.each { |path| ERB.new(File.read(path)).src }; puts "Banner E
   app/views/studio/banners/_impersonation.html.erb
 
 for test_file in \
+  test/lib/require_order_test.rb \
   test/lib/studio_test.rb \
   test/lib/studio/color_scale_test.rb \
   test/lib/studio/theme_resolver_test.rb \

@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "uri"
 require "test_helper"
+require "uri"
 require "action_view"
 require_relative "../../app/helpers/studio/admin_models_table_helper"
 
