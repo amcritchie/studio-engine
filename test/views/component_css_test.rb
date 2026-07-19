@@ -1,0 +1,133 @@
+# frozen_string_literal: true
+
+require "action_view"
+require "test_helper"
+
+# The engine's partials emit .card / .badge / .input-field / .empty-state /
+# .btn* — classes the engine itself must DEFINE. They ship in
+# app/assets/tailwind/studio_engine/engine.css, the tailwindcss-rails engines
+# contract path, which consumers pull into their Tailwind build with
+# `@import "../builds/tailwind/studio_engine";`.
+#
+# The load-bearing invariant here is POSITIVE: every component-family class an
+# engine view references is defined as an @utility in the shipped stylesheet —
+# so a future partial that grows a `btn-ghost` fails this suite until the CSS
+# ships too.
+class ComponentCssTest < Minitest::Test
+  CSS_PATH = File.expand_path("../../app/assets/tailwind/studio_engine/engine.css", __dir__)
+  VIEWS_GLOB = File.expand_path("../../app/views/**/*.erb", __dir__)
+  PRESET_PATH = File.expand_path("../../tailwind/studio.tailwind.config.js", __dir__)
+
+  # The class-name families this stylesheet owns. Tokens of these shapes found
+  # anywhere in the engine's views must be @utility-defined.
+  COMPONENT_FAMILY = /\A(?:card(?:-[a-z0-9-]+)?|badge|input-field|empty-state|json-debug|label-upper|btn(?:-[a-z0-9-]+)?)\z/
+
+  def css
+    @css ||= File.read(CSS_PATH)
+  end
+
+  def defined_utilities
+    @defined_utilities ||= css.scan(/@utility\s+([\w-]+)/).flatten.to_set
+  end
+
+  def test_stylesheet_exists_at_engines_contract_path
+    assert File.exist?(CSS_PATH),
+      "expected app/assets/tailwind/studio_engine/engine.css (tailwindcss-rails engines contract path)"
+  end
+
+  def test_every_component_class_used_in_engine_views_is_defined
+    used = Dir.glob(VIEWS_GLOB).flat_map { |f| File.read(f).scan(/[\w-]+/) }
+              .grep(COMPONENT_FAMILY).to_set
+
+    missing = used - defined_utilities
+    assert_empty missing.to_a,
+      "engine views use component classes the engine does not ship: #{missing.to_a.sort.join(', ')}"
+  end
+
+  def test_core_component_classes_are_defined
+    %w[card card-hover badge input-field empty-state json-debug label-upper
+       btn btn-primary btn-secondary btn-outline btn-danger btn-warning
+       btn-success btn-google btn-neutral btn-sm btn-lg].each do |name|
+      assert_includes defined_utilities, name, "@utility #{name} missing from engine.css"
+    end
+  end
+
+  def test_buttons_are_wired_to_theme_role_vars_with_focus_visible
+    btn = css[/@utility btn \{.*?\n\}/m]
+    refute_nil btn, "expected an @utility btn block"
+    assert_includes btn, "&:focus-visible", "btn must keep the hub's focus-visible treatment"
+    assert_includes btn, "var(--color-cta)"
+
+    assert_includes css, "background-color: var(--color-cta);"
+    assert_includes css, "background-color: var(--color-cta-hover);"
+    assert_includes css, "background-color: var(--color-danger);"
+  end
+
+  def test_every_theme_var_referenced_is_emitted_by_theme_resolver
+    resolver = Studio::ThemeResolver.new
+    emitted = (resolver.dark_mode_vars.keys +
+               resolver.light_mode_vars.keys +
+               resolver.primary_palette_vars.keys).to_set
+
+    referenced = css.scan(/var\((--color-[\w-]+)\)/).flatten.to_set
+    refute_empty referenced.to_a, "expected engine.css to reference theme CSS vars"
+
+    unknown = referenced - emitted
+    assert_empty unknown.to_a,
+      "engine.css references theme vars the ThemeResolver never emits: #{unknown.to_a.sort.join(', ')}"
+  end
+
+  def test_preset_defines_2xs_and_3xs_font_sizes
+    preset = File.read(PRESET_PATH)
+    assert_match(/fontSize:\s*\{[^}]*'2xs':\s*'0\.6875rem'/m, preset, "preset must define text-2xs (11px)")
+    assert_match(/fontSize:\s*\{[^}]*'3xs':\s*'0\.625rem'/m, preset, "preset must define text-3xs (10px)")
+  end
+
+  def test_gem_packages_the_stylesheet
+    spec = Gem::Specification.load(File.expand_path("../../studio-engine.gemspec", __dir__))
+    assert_includes spec.files, "app/assets/tailwind/studio_engine/engine.css",
+      "gemspec files must package the component stylesheet"
+  end
+
+  # -- Partials render with the shipped classes -----------------------------
+
+  def test_badge_partial_renders_shipped_badge_class
+    html = view.render(partial: "components/badge", locals: { text: "Live", scheme: "success" })
+
+    assert_includes html, 'class="badge '
+    assert_includes defined_utilities, "badge"
+    assert_includes html, ">Live<"
+  end
+
+  def test_empty_state_partial_renders_shipped_empty_state_class
+    html = view.render(partial: "components/empty_state", locals: { message: "Nothing here", detail: "Yet" })
+
+    assert_includes html, 'class="empty-state"'
+    assert_includes defined_utilities, "empty-state"
+    assert_includes html, "Nothing here"
+  end
+
+  def test_input_partial_renders_shipped_input_field_class
+    record = Struct.new(:email).new("shannon@example.com")
+    form = ActionView::Helpers::FormBuilder.new(:user, record, view, {})
+    html = view.render(partial: "components/input", locals: { form: form, field: :email, label: "Email" })
+
+    assert_includes html, 'class="input-field"'
+    assert_includes defined_utilities, "input-field"
+    assert_includes html, 'value="shannon@example.com"'
+  end
+
+  def test_card_partial_renders_shipped_card_class
+    html = view.render(layout: "components/card", locals: { padding: "p-4" }) { "Card body" }
+
+    assert_includes html, 'class="card p-4"'
+    assert_includes defined_utilities, "card"
+    assert_includes html, "Card body"
+  end
+
+  private
+
+  def view
+    @view ||= ActionView::Base.with_empty_template_cache.with_view_paths(["app/views"])
+  end
+end

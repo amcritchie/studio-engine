@@ -2,6 +2,10 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
+## Unreleased
+
+- **Engine-shipped component CSS** — `.card`/`.btn*`/`.badge`/`.input-field`/`.empty-state` + `text-2xs`/`text-3xs` preset tokens; consumers adopt with `@import "../builds/tailwind/studio_engine";` (docs/NEW_APP_SETUP.md section 13).
+
 ## 0.12.1 — 2026-07-11
 
 ### Fixed
