@@ -9,6 +9,12 @@ gemspec
 # XSLT / xmlC14NExecute). This gem still does NOT declare nokogiri as a runtime
 # dependency — it arrives via Rails in the consuming app. Tracked in
 # SECURITY-AUDIT-2026-05-17.md.
+#
+# It is also not declared as a test dependency, but test/views/user_nav_test.rb
+# now requires it directly to walk rendered markup. That resolves today because
+# actionview pulls it in via rails-dom-testing; if that ever stops being true
+# the suite fails loudly with a LoadError rather than silently skipping, so
+# declare it here at that point rather than pre-emptively pinning it.
 
 group :development, :test do
   # SQLite drives the test/dummy Rails app's in-memory database (see

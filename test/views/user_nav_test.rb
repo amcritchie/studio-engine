@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require "action_view"
+require "nokogiri"
 require "active_support/core_ext/object/try"
 require "test_helper"
 
@@ -92,7 +93,65 @@ class UserNavTest < Minitest::Test
     refute_includes html, "Pat Studio"
   end
 
+  # --- username truncation chain ----------------------------------------
+  #
+  # This suite renders through ActionView only: there is no layout engine
+  # here, so it CANNOT assert "the username shows an ellipsis at 400px".
+  # That property was measured directly in Chromium against this partial's
+  # real output plus the hub's compiled Tailwind (viewport 400px, nav given
+  # 328px): with min-w-0 on the inner Div 1 row the nav root could not
+  # shrink below a 364px min-content width, the avatar was pushed to
+  # right=424 (page scrolled horizontally) and the username link measured
+  # scrollWidth 156 == clientWidth 156, so NO ellipsis rendered. With
+  # min-w-0 on the flex-1 column instead, the nav root shrank to 328px,
+  # nothing crossed the viewport, and the link measured scrollWidth 156 >
+  # clientWidth 120 -- the ellipsis rendered.
+  #
+  # What IS assertable here is the structural precondition that made the
+  # difference, so these two tests guard it: a flex item defaults to
+  # min-width auto, so the min-w-0 escape has to sit on the flex item of
+  # the nav root. Putting it anywhere deeper is a no-op for shrinking, and
+  # that misplacement is exactly the bug these tests exist to catch. They
+  # walk the DOM from the truncating link upward rather than string-matching
+  # the class, so min-w-0 appearing elsewhere in the subtree cannot satisfy
+  # them.
+
+  def test_min_w_0_sits_on_the_nav_roots_flex_item_not_deeper
+    column = username_column(render_nav)
+
+    assert_includes column["class"].split, "min-w-0",
+      "the flex item of the nav root must carry min-w-0, or it keeps " \
+      "min-width auto and refuses to shrink, defeating the username truncate"
+  end
+
+  def test_no_element_below_the_flex_item_carries_a_stray_min_w_0
+    # Guards the specific regression: min-w-0 on the inner Div 1 row reads
+    # like the fix but does nothing, because that row is a block child of
+    # the column, not a flex item of the nav root.
+    column = username_column(render_nav)
+    strays = column.css("[class~='min-w-0']").map { |el| el["class"] }
+
+    assert_empty strays,
+      "min-w-0 below the flex item does not enable shrinking; it belongs on the column"
+  end
+
   private
+
+  # Walks up from the truncating username link to the nav root's direct
+  # child -- the element that is actually a flex item of the nav root.
+  def username_column(html)
+    doc = Nokogiri::HTML5.fragment(html)
+    nav_root = doc.at_css("div.flex.gap-2")
+    refute_nil nav_root, "expected the nav root flex row"
+
+    link = nav_root.at_css("a.truncate")
+    refute_nil link, "expected the truncating username link"
+
+    node = link
+    node = node.parent while node.parent && node.parent != nav_root
+    assert_equal nav_root, node.parent, "expected the link to descend from the nav root"
+    node
+  end
 
   # Minimal user double covering everything the partial (and the nested
   # avatar partial) reads. No :level and no :truncated_solana, so the

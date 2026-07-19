@@ -43,11 +43,16 @@
 <div class="flex gap-2">
   <% if logged_in? %>
     <%# Left column: Div 1 + Div 2 stacked %>
-    <div class="flex-1">
-      <%# Div 1 (Bigger): balance + icons + username. min-w-0 lets the
-          truncate on the username actually shrink inside the flex row
-          (flex items default to min-width auto and refuse to shrink). %>
-      <div class="flex min-w-0 items-center gap-2 leading-none" :style="'padding: 0 6px;' + ($store.devMode ? 'background: cornflowerblue;' : '')">
+    <%# min-w-0 belongs HERE, on the flex item of the outer row. A flex item
+        defaults to min-width auto, so without it this column refuses to
+        shrink below its content and the username overflows instead of
+        truncating. Div 1 below is a block child of this column, not a flex
+        item of the outer row, so min-w-0 there has no effect on shrinking.
+        The username link truncates on its own: overflow-hidden gives it an
+        automatic minimum size of zero inside Div 1. %>
+    <div class="flex-1 min-w-0">
+      <%# Div 1 (Bigger): balance + icons + username. %>
+      <div class="flex items-center gap-2 leading-none" :style="'padding: 0 6px;' + ($store.devMode ? 'background: cornflowerblue;' : '')">
         <%= studio_nav_slot.call(balance_slot, balance_html) %>
         <div class="flex items-center gap-2 ml-auto self-end">
           <%= studio_nav_slot.call(extra_icons_slot, extra_icons_html) %>
