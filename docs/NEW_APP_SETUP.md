@@ -416,6 +416,11 @@ shared Tailwind preset (already wired in section 3) is required — the classes
 `text-2xs` (11px) and `text-3xs` (10px) for dense UI instead of
 `text-[11px]`/`text-[10px]` arbitrary values.
 
+Section 3's `content` glob entry for the engine's views
+(`${studioPath}/app/views/**/*.{erb,html}`) is load-bearing here: `@utility`
+classes are only emitted when Tailwind sees them used, so an app that skips
+that glob gets silently unstyled engine partials.
+
 ## 14. Hub Link (McRitchie Studio)
 
 Add a nav link in McRitchie Studio only after the app is registered in `mcritchie-studio/config/satellites.yml`. If the app participates in one-way SSO, point the link at `/sso_login`; otherwise point at the app root or a public landing page.

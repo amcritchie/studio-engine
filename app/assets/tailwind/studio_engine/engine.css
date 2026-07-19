@@ -78,6 +78,9 @@
   }
 }
 
+/* NOTE: btn-secondary and btn-success compile to IDENTICAL declarations (both
+   sit on var(--color-success)) — an intentional hub-canonical alias, kept as
+   two names so existing markup in every consumer keeps working. */
 @utility btn-secondary {
   @apply text-white;
   background-color: var(--color-success);

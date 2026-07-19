@@ -10,17 +10,29 @@ require "test_helper"
 # `@import "../builds/tailwind/studio_engine";`.
 #
 # The load-bearing invariant here is POSITIVE: every component-family class an
-# engine view references is defined as an @utility in the shipped stylesheet —
-# so a future partial that grows a `btn-ghost` fails this suite until the CSS
-# ships too.
+# engine view or helper references (in a class attribute — prose comments do
+# not count) is defined as an @utility in the shipped stylesheet — so a future
+# partial that grows a `btn-ghost` fails this suite until the CSS ships too.
 class ComponentCssTest < Minitest::Test
   CSS_PATH = File.expand_path("../../app/assets/tailwind/studio_engine/engine.css", __dir__)
-  VIEWS_GLOB = File.expand_path("../../app/views/**/*.erb", __dir__)
   PRESET_PATH = File.expand_path("../../tailwind/studio.tailwind.config.js", __dir__)
 
+  # Everything that can reference a component class: ERB views plus Ruby
+  # helpers (a helper growing a btn-* class must not slip the invariant).
+  SCAN_GLOBS = [
+    File.expand_path("../../app/views/**/*.erb", __dir__),
+    File.expand_path("../../app/helpers/**/*.rb", __dir__)
+  ].freeze
+
   # The class-name families this stylesheet owns. Tokens of these shapes found
-  # anywhere in the engine's views must be @utility-defined.
+  # in a class reference in the engine's views/helpers must be @utility-defined.
   COMPONENT_FAMILY = /\A(?:card(?:-[a-z0-9-]+)?|badge|input-field|empty-state|json-debug|label-upper|btn(?:-[a-z0-9-]+)?)\z/
+
+  # A class REFERENCE is a class attribute — `class="..."` in ERB/HTML or
+  # `class: "..."` in a Ruby options hash — never prose. Tokenizing raw file
+  # text instead would trip on comments that merely mention a card-*/btn-*
+  # token (proven cross-PR: a 'card-out' in another PR's comment).
+  CLASS_CTX = /class(?:=|:\s*)["']([^"']*)["']/
 
   def css
     @css ||= File.read(CSS_PATH)
@@ -36,12 +48,16 @@ class ComponentCssTest < Minitest::Test
   end
 
   def test_every_component_class_used_in_engine_views_is_defined
-    used = Dir.glob(VIEWS_GLOB).flat_map { |f| File.read(f).scan(/[\w-]+/) }
+    used = Dir.glob(SCAN_GLOBS)
+              .flat_map { |f| File.read(f).scan(CLASS_CTX).flatten }
+              .flat_map { |attr| attr.scan(/[\w-]+/) }
               .grep(COMPONENT_FAMILY).to_set
+
+    refute_empty used.to_a, "expected the scan to find component classes in engine views"
 
     missing = used - defined_utilities
     assert_empty missing.to_a,
-      "engine views use component classes the engine does not ship: #{missing.to_a.sort.join(', ')}"
+      "engine views/helpers use component classes the engine does not ship: #{missing.to_a.sort.join(', ')}"
   end
 
   def test_core_component_classes_are_defined
@@ -63,18 +79,22 @@ class ComponentCssTest < Minitest::Test
     assert_includes css, "background-color: var(--color-danger);"
   end
 
-  def test_every_theme_var_referenced_is_emitted_by_theme_resolver
+  def test_every_theme_var_referenced_is_emitted_in_both_modes
     resolver = Studio::ThemeResolver.new
-    emitted = (resolver.dark_mode_vars.keys +
-               resolver.light_mode_vars.keys +
-               resolver.primary_palette_vars.keys).to_set
+    palette = resolver.primary_palette_vars.keys
 
     referenced = css.scan(/var\((--color-[\w-]+)\)/).flatten.to_set
     refute_empty referenced.to_a, "expected engine.css to reference theme CSS vars"
 
-    unknown = referenced - emitted
-    assert_empty unknown.to_a,
-      "engine.css references theme vars the ThemeResolver never emits: #{unknown.to_a.sort.join(', ')}"
+    # Per mode, not the union: a var emitted only in dark mode would satisfy a
+    # union check while rendering invisible in light mode. The palette vars are
+    # emitted alongside BOTH mode blocks (see ThemeResolver#to_css).
+    { "dark" => resolver.dark_mode_vars.keys,
+      "light" => resolver.light_mode_vars.keys }.each do |mode, keys|
+      unknown = referenced - (keys + palette).to_set
+      assert_empty unknown.to_a,
+        "engine.css references theme vars not emitted in #{mode} mode: #{unknown.to_a.sort.join(', ')}"
+    end
   end
 
   def test_preset_defines_2xs_and_3xs_font_sizes

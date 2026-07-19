@@ -73,7 +73,8 @@ for test_file in \
   test/views/component_css_test.rb \
   test/integration/engine_rails_8_1_boot_test.rb \
   test/integration/model_page_routes_test.rb \
-  test/integration/component_css_bundle_test.rb
+  test/integration/component_css_bundle_test.rb \
+  test/integration/tailwind_probe_build_test.rb
 do
   ruby -Itest "$test_file"
 done
