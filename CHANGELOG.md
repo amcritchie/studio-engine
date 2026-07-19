@@ -5,6 +5,7 @@ The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This pro
 ## Unreleased
 
 - **Engine-shipped component CSS** — `.card`/`.btn*`/`.badge`/`.input-field`/`.empty-state` + `text-2xs`/`text-3xs` preset tokens; consumers adopt with `@import "../builds/tailwind/studio_engine";` (docs/NEW_APP_SETUP.md section 13).
+- **De-forked UI primitives** — the modal host upstreams Turf's animated superset (inline keyframes, `window.ModalAnimations` registry, `enterAnim`/`exitAnim` props, directional `swap()`/`advance()`), and `components/user_nav` gains partial slots (`balance_slot`/`extra_icons_slot`/`div2_slot`) with the legacy `*_html` string locals still honored.
 
 ## 0.12.1 — 2026-07-11
 
