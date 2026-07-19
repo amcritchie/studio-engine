@@ -125,6 +125,97 @@ slide between two emoji on hover and keyboard focus. The CSS ships through
 <% end %>
 ```
 
+### Modal host
+
+`studio/modals/_host.html.erb` is the single shared shell for every modal. It
+owns the backdrop, scroll lock, escape + click-outside dismissal, ARIA dialog
+role, mount/unmount animations, and bfcache/Turbo snapshot cleanup. Animation
+keyframes ship inline in the partial — consumers need no extra CSS.
+
+Render it once near the end of the layout `<body>`, registering each modal in
+the block:
+
+```erb
+<%= render "studio/modals/host" do %>
+  <template x-if="$store.modals.current().id === 'crop-photo'">
+    <%= render "studio/modals/crop_photo" %>
+  </template>
+<% end %>
+```
+
+Store API (`Alpine.store('modals')`):
+
+| Call | Behavior |
+|------|----------|
+| `open(id, props, opts)` | Push a modal onto the stack. `opts.replace: true` swaps the top entry with a directional slide. |
+| `swap(id, props, opts)` | Sugar for `open(id, props, { replace: true })`. `opts.direction: 'back'` mirrors the slide. |
+| `advance(propsPatch, opts)` | Patch the current entry's props with the same directional slide, without replacing the stack entry — for steps inside one modal whose outer `x-data` scope must survive. |
+| `close()` | Animated close of the current modal (no-op if already closing). |
+| `closeAll()` | Instant, unanimated clear (used by navigation cleanup). |
+| `closeAllDismissible()` | Clears all modals except those opened with `dismissible: false`. |
+| `isOpen(id)` / `current()` | Introspection. |
+
+Recognized props: `dismissible: false` disables escape/click-outside dismissal
+(e.g. an in-flight transaction); `enterAnim` / `exitAnim` pick a named
+animation from the registry (`'pop'` default, `'shake'`, `'slide'`).
+
+`window.ModalAnimations` is the animation registry — each key maps a CSS class
+to its duration. To add a custom animation, define `window.ModalAnimations`
+**before** the host renders with your extra keys (they merge over the engine
+defaults) and ship the matching CSS class in the app stylesheet:
+
+```html
+<script>
+  window.ModalAnimations = { enter: { wobble: { cls: 'my-modal-wobble', ms: 400 } } };
+</script>
+```
+
+Prefer an inline script placed before the host render, as above. A module that
+loads after the host (e.g. via importmap) and assigns `window.ModalAnimations`
+**replaces** the merged registry rather than extending it — the host guards
+against this (unknown keys and gutted registries fall back to the built-in
+`'pop'`), but your other custom keys are lost unless the late script merges
+into the existing object instead of assigning over it.
+
+`window.StudioModals.holdAtLeast(ms)` returns a thenable that resolves no
+sooner than `ms` after creation — stamp it when a processing view becomes
+visible so fast operations don't flash the spinner.
+
+**Behavioral deltas vs the previous engine host (0.12 and earlier).** The
+store's API surface is a superset, but three behaviors changed, and a consumer
+deleting its shadow copy inherits them — regression-test these paths rather
+than assuming drop-in equivalence:
+
+- `close()` is now **asynchronous**: the entry animates out and is spliced
+  after its exit animation's registered duration (previously an immediate
+  `pop()`).
+- `close()` **no-ops while the current entry is already closing** — a double
+  `close()` inside the animation window now pops ONE stacked entry, not two —
+  and `close()` on an empty stack no longer runs `_sync()`.
+- `open(id, props, { replace: true })` (and `swap()`) is now **asynchronous**:
+  the replacement lands after the 220ms slide-out (previously an immediate
+  top-of-stack assignment).
+
+### User nav slots
+
+`components/_user_nav.html.erb` renders the right-side navbar user section.
+Apps customize it through partial slots — each an optional local naming a
+partial (String path, or `{ partial:, locals: }`):
+
+- `balance_slot` — balance display at the start of the top row
+- `extra_icons_slot` — app icon buttons before the admin gear + theme toggle
+- `div2_slot` — replaces the default second row (wallet address + level bar)
+
+```erb
+<%= render "components/user_nav",
+      balance_slot: "components/wallet_balance",
+      div2_slot: { partial: "components/seeds_bar", locals: { compact: true } } %>
+```
+
+The legacy string locals (`balance_html`, `extra_icons_html`, `div2_html` —
+pre-rendered HTML injected via `raw`) are deprecated but still honored when the
+matching slot is absent, so existing call sites render unchanged.
+
 ## Overriding Views
 
 This is a non-isolated engine -- app views at the same path automatically override engine views. For example, placing `app/views/sessions/new.html.erb` in the consuming app replaces the engine's login page.

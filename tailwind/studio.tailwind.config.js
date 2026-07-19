@@ -9,6 +9,14 @@ module.exports = {
       mono: ['ui-monospace', 'SFMono-Regular', 'monospace'],
     },
     extend: {
+      // Sub-xs type scale for dense UI (badges, meta rows, tick labels).
+      // Bare sizes (no line-height tuple) so text-2xs / text-3xs are drop-in
+      // replacements for the text-[11px] / text-[10px] arbitrary values that
+      // dominate the consumer apps.
+      fontSize: {
+        '2xs': '0.6875rem', // 11px
+        '3xs': '0.625rem',  // 10px
+      },
       colors: {
         // Theme-aware semantic tokens (reference CSS variables)
         page:          'var(--color-page)',

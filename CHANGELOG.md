@@ -2,6 +2,11 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
+## Unreleased
+
+- **Engine-shipped component CSS** — `.card`/`.btn*`/`.badge`/`.input-field`/`.empty-state` + `text-2xs`/`text-3xs` preset tokens; consumers adopt with `@import "../builds/tailwind/studio_engine";` (docs/NEW_APP_SETUP.md section 13).
+- **De-forked UI primitives** — the modal host upstreams Turf's animated host (inline keyframes, `window.ModalAnimations` registry, `enterAnim`/`exitAnim` props, directional `swap()`/`advance()`; API superset of the old host — behavioral deltas listed in the README), and `components/user_nav` gains partial slots (`balance_slot`/`extra_icons_slot`/`div2_slot`) with the legacy `*_html` string locals still honored.
+
 ## 0.12.1 — 2026-07-11
 
 ### Fixed
