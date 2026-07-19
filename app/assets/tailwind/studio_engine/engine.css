@@ -1,0 +1,146 @@
+/*
+  studio-engine component classes — the shared UI component layer.
+
+  The engine's partials emit .card / .badge / .input-field / .empty-state /
+  .btn* and this file is where those classes are DEFINED. Consumers adopt with
+  ONE line in app/assets/tailwind/application.css (after `@import "tailwindcss";`):
+
+      @import "../builds/tailwind/studio_engine";
+
+  tailwindcss-rails auto-generates that entry point on every build/watch
+  (or manually: `bin/rails tailwindcss:engines`) because this file lives at the
+  Rails-engines contract path: app/assets/tailwind/<engine_name>/engine.css.
+
+  Requirements:
+  - Tailwind v4 (this file uses @utility, so classes sort/override correctly
+    in the utilities layer and take variants like `md:card`).
+  - The consumer's tailwind config spreads the engine preset
+    (tailwind/studio.tailwind.config.js) — it defines the surface / heading /
+    subtle / primary token utilities @apply'd below.
+
+  Colors resolve through the 7-role theme CSS custom properties (--color-cta,
+  --color-surface, ...) emitted by studio_theme_css_tag, so themed apps restyle
+  these components automatically in dark AND light mode.
+
+  Canonical source: these definitions were lifted verbatim from
+  mcritchie-studio app/assets/tailwind/application.css (the hub versions win
+  where per-app copies drifted). Keep the two in sync until the consumers drop
+  their local copies for this import.
+*/
+
+/* -- Surfaces -------------------------------------------------------------- */
+
+@utility card {
+  @apply bg-surface rounded-xl border border-subtle;
+}
+
+@utility card-hover {
+  @apply bg-surface rounded-xl border border-subtle hover:border-primary-700/50 hover:shadow-lg hover:shadow-primary-900/10 transition;
+}
+
+@utility empty-state {
+  @apply bg-surface rounded-xl border border-subtle p-8 text-center;
+}
+
+@utility json-debug {
+  @apply bg-inset rounded-xl border border-subtle p-4 overflow-x-auto;
+}
+
+/* -- Text + form ----------------------------------------------------------- */
+
+@utility badge {
+  @apply inline-flex items-center px-2 py-0.5 rounded-sm text-xs font-medium border;
+}
+
+@utility label-upper {
+  @apply text-xs text-muted uppercase tracking-wider;
+}
+
+@utility input-field {
+  @apply w-full bg-surface-alt border border-strong rounded-lg px-4 py-3 text-heading focus:border-primary focus:outline-hidden;
+}
+
+/* -- Button system (standardized across all Studio apps) ------------------- */
+
+@utility btn {
+  @apply inline-flex items-center justify-center font-bold rounded-lg transition px-6 py-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed;
+  &:focus-visible {
+    outline: 2px solid color-mix(in srgb, var(--color-cta) 70%, transparent);
+    outline-offset: 2px;
+  }
+}
+
+@utility btn-primary {
+  @apply text-white;
+  background-color: var(--color-cta);
+  &:hover {
+    background-color: var(--color-cta-hover);
+  }
+}
+
+/* NOTE: btn-secondary and btn-success compile to IDENTICAL declarations (both
+   sit on var(--color-success)) — an intentional hub-canonical alias, kept as
+   two names so existing markup in every consumer keeps working. */
+@utility btn-secondary {
+  @apply text-white;
+  background-color: var(--color-success);
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+@utility btn-outline {
+  @apply bg-transparent border text-heading;
+  border-color: var(--color-cta);
+  &:hover {
+    @apply text-white;
+    background-color: var(--color-cta);
+  }
+}
+
+@utility btn-danger {
+  @apply text-white;
+  background-color: var(--color-danger);
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+@utility btn-warning {
+  @apply text-white;
+  background-color: var(--color-warning);
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+@utility btn-success {
+  @apply text-white;
+  background-color: var(--color-success);
+  &:hover {
+    filter: brightness(0.9);
+  }
+}
+
+@utility btn-google {
+  @apply bg-white border border-strong shadow-xs;
+  color: #374151;
+  &:hover {
+    @apply bg-gray-50;
+  }
+}
+
+@utility btn-neutral {
+  @apply bg-surface-alt text-heading border border-strong;
+  &:hover {
+    @apply bg-surface;
+  }
+}
+
+@utility btn-sm {
+  @apply px-3 py-1.5 text-xs;
+}
+
+@utility btn-lg {
+  @apply px-8 py-3 text-base rounded-xl shadow-sm;
+}

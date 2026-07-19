@@ -70,8 +70,11 @@ for test_file in \
   test/lib/studio_email_delivery_helper_test.rb \
   test/views/sticky_table_header_assets_test.rb \
   test/views/admin_models_table_helper_test.rb \
+  test/views/component_css_test.rb \
   test/integration/engine_rails_8_1_boot_test.rb \
-  test/integration/model_page_routes_test.rb
+  test/integration/model_page_routes_test.rb \
+  test/integration/component_css_bundle_test.rb \
+  test/integration/tailwind_probe_build_test.rb
 do
   ruby -Itest "$test_file"
 done
