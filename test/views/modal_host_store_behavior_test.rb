@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
+require "test_helper"
 require "action_view"
 require "tempfile"
-require "test_helper"
 
 # Executes the modal host's Alpine store FOR REAL. The other host tests
 # assert on the emitted source; review proved that is structurally blind to
