@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "action_view"
 require "test_helper"
+require "action_view"
 
 # The engine's partials emit .card / .badge / .input-field / .empty-state /
 # .btn* — classes the engine itself must DEFINE. They ship in

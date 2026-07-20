@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
+require "test_helper"
 require "tmpdir"
 require "open3"
-require "test_helper"
 require "tailwindcss/ruby"
 
 # Compiles the shipped component stylesheet through a REAL consumer-style

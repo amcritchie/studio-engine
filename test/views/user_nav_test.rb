@@ -1,9 +1,9 @@
 # frozen_string_literal: true
 
+require "test_helper"
 require "action_view"
 require "nokogiri"
 require "active_support/core_ext/object/try"
-require "test_helper"
 
 # Renders components/_user_nav.html.erb through ActionView and pins the slot
 # contract: the new partial slots (balance_slot / extra_icons_slot /
