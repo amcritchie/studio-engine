@@ -2,6 +2,17 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
+## 0.13.1 — 2026-07-19
+
+### Changed
+
+- **CI runs the engine's own suite from a glob-derived manifest** (PR #18) —
+  `bin/release-check` now derives its test manifest by globbing the tree
+  instead of keeping a hand-maintained list, and a suite-guard trips if any
+  test file goes unrun; bundler is set up before any other require so the
+  guard's invariant holds from boot. Internal CI tooling only — no
+  consumer-facing change.
+
 ## 0.13.0 — 2026-07-19
 
 ### Added
