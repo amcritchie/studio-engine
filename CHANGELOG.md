@@ -2,10 +2,31 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
-## Unreleased
+## 0.13.0 — 2026-07-19
+
+### Added
 
 - **Engine-shipped component CSS** — `.card`/`.btn*`/`.badge`/`.input-field`/`.empty-state` + `text-2xs`/`text-3xs` preset tokens; consumers adopt with `@import "../builds/tailwind/studio_engine";` (docs/NEW_APP_SETUP.md section 13).
 - **De-forked UI primitives** — the modal host upstreams Turf's animated host (inline keyframes, `window.ModalAnimations` registry, `enterAnim`/`exitAnim` props, directional `swap()`/`advance()`; API superset of the old host — behavioral deltas listed in the README), and `components/user_nav` gains partial slots (`balance_slot`/`extra_icons_slot`/`div2_slot`) with the legacy `*_html` string locals still honored.
+
+### Fixed
+
+- **Theme invariants scan class attributes, not prose** — the used-classes
+  invariant extracts `class="..."` / `class: "..."` contents before tokenizing,
+  so a comment mentioning a `card-*`/`btn-*` token no longer trips it; the
+  theme-var invariant now asserts per mode (dark AND light) instead of the
+  union, so a var emitted in only one mode cannot pass.
+- **Modal host review fixes** — `cardClasses()` no longer clobbers registry
+  `slide` animations (the directional swap flags are guarded, so
+  `enterAnim`/`exitAnim: "slide"` resolve to real classes instead of a frozen
+  220ms snap); the README's behavioral-delta wording is corrected; and a
+  node-executed store suite hardens the rendered modal store (cardClasses
+  resolution, registry merge, animated close timing, swap races, late registry
+  replacement).
+- **Consumer checkout fetches full history** — the consumer-CI checkout uses
+  `fetch-depth: 0` so the hub's e2e quarantine ratchet can resolve
+  `origin/release` (the default depth-1 single-ref checkout left the baseline
+  ref unresolvable, which is red by design).
 
 ## 0.12.1 — 2026-07-11
 
