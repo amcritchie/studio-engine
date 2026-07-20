@@ -1,7 +1,7 @@
 # frozen_string_literal: true
 
-require "action_view"
 require "test_helper"
+require "action_view"
 
 # Renders the canonical modal host (studio/modals/_host.html.erb) through
 # ActionView and pins its contract: the Alpine.store('modals') API surface,

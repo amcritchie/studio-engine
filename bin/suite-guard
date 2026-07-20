@@ -1,0 +1,100 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# Suite manifest + coverage guard for bin/release-check.
+#
+# REGRESSION HISTORY (task engine-ci-runs-own-suite, review round 2): the first
+# attempt enumerated the suite as a curated 25-file list while the tree held 26
+# test files — test/lib/studio/ui_primitives_test.rb existed but never ran, and
+# the guard compared the log only against what the runner ANNOUNCED, so it was
+# structurally blind to the miss. This tool closes that class of miss:
+#
+#   * the RUNNER derives its file set from the tree glob (`--run-list`), so a
+#     new test file is included by construction — there is no list to curate;
+#   * the GUARD independently re-globs the tree and fails if any test file in
+#     the tree did not run. Curation drift, glob drift, and hide-a-failing-file
+#     are all the same failure: "exists in the tree, absent from the log".
+#
+# Modes:
+#   bin/suite-guard --manifest      print every test file in the tree, sorted
+#   bin/suite-guard --run-list      manifest minus RELEASE_CHECK_HIDE entries
+#   bin/suite-guard <suite.log>     verify the log fully covered the manifest
+#
+# RELEASE_CHECK_HIDE (colon-separated paths) affects ONLY --run-list, never the
+# manifest the guard checks against — so hiding a file always reddens the run.
+# It exists as a mutation hook proving the guard trips; it cannot silently skip
+# a test. This script stays dependency-free (no bundler, no gems) so it can
+# never hit the require-order/gem-activation traps the suite guards against.
+
+ROOT = File.expand_path("..", __dir__)
+
+# Anti-vacuous floor: a broken glob must fail loudly, not pass over nothing.
+# Keep in step with the floor in test/lib/require_order_test.rb.
+MANIFEST_FLOOR = 20
+
+def manifest
+  files = Dir.glob("test/**/*_test.rb", base: ROOT)
+             .reject { |f| f.start_with?("test/dummy/") }
+             .sort
+  if files.length < MANIFEST_FLOOR
+    abort "Suite guard: glob matched only #{files.length} test files " \
+          "(floor #{MANIFEST_FLOOR}) — the glob is broken and would guard nothing."
+  end
+  files
+end
+
+def hidden
+  ENV.fetch("RELEASE_CHECK_HIDE", "").split(":").reject(&:empty?)
+end
+
+def check_log(path)
+  log = File.read(path)
+  announced = log.scan(/^== (.+)$/).flatten
+  expected  = manifest
+
+  dupes = announced.tally.select { |_f, n| n > 1 }.keys
+  abort "Suite guard: these files were announced more than once: #{dupes.join(', ')}" if dupes.any?
+
+  # Completeness FIRST — the round-one blocker. Every test file in the tree
+  # must appear in the log; every announced file must exist in the tree.
+  missing = expected - announced
+  if missing.any?
+    abort "Suite guard: these test files exist in the tree but NEVER RAN: " \
+          "#{missing.join(', ')}. The runner enumerates test/**/*_test.rb by " \
+          "glob — a file can only go missing if the run list was tampered " \
+          "with (RELEASE_CHECK_HIDE set?) or the log is not from a full run."
+  end
+  unknown = announced - expected
+  if unknown.any?
+    abort "Suite guard: these files were announced but are not in the tree: " \
+          "#{unknown.join(', ')} — stale log or deleted test file."
+  end
+
+  # Evidence, not exit status: every file must produce a minitest summary,
+  # contribute runs, and not skip. A skip reads as a pass.
+  summaries = log.scan(/^(\d+) runs, (\d+) assertions, (\d+) failures, (\d+) errors, (\d+) skips$/)
+  if summaries.length != announced.length
+    abort "Suite guard: #{announced.length} test files announced but #{summaries.length} " \
+          "minitest summaries found — a file produced no summary (it ran nothing)."
+  end
+
+  silent = announced.zip(summaries).select { |_file, s| s[0].to_i.zero? }.map(&:first)
+  abort "Suite guard: these files ran ZERO tests: #{silent.join(', ')}" if silent.any?
+
+  skipped = announced.zip(summaries).select { |_file, s| s[4].to_i.positive? }.map(&:first)
+  if skipped.any?
+    abort "Suite guard: these files SKIPPED tests: #{skipped.join(', ')}. A skip reads as a " \
+          "pass — assert the missing precondition instead, or install the runtime it needs."
+  end
+
+  runs = summaries.sum { |s| s[0].to_i }
+  puts "Suite guard: #{announced.length} files, #{runs} runs, 0 skipped, 0 silent, tree fully covered."
+end
+
+case ARGV
+in ["--manifest"] then puts manifest
+in ["--run-list"] then puts(manifest - hidden)
+in [String => path] if File.file?(path) then check_log(path)
+else
+  abort "Usage: bin/suite-guard --manifest | --run-list | <suite.log>"
+end

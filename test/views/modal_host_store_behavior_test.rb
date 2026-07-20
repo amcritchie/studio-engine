@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
+require "test_helper"
 require "action_view"
 require "tempfile"
-require "test_helper"
 
 # Executes the modal host's Alpine store FOR REAL. The other host tests
 # assert on the emitted source; review proved that is structurally blind to
@@ -13,9 +13,22 @@ require "test_helper"
 # animated close timing, swap races, late registry replacement — is asserted
 # by CALLING it, not by grepping it.
 class ModalHostStoreBehaviorTest < Minitest::Test
+  # A missing node runtime FAILS here; it must never `skip`. This is the only
+  # test that observes the store's real resolution behavior, so a skip would
+  # read as a pass on exactly the host where the coverage is absent — the
+  # "green by not running" shape this suite exists to catch. CI installs node
+  # in the engine-suite lane (.github/workflows/engine-ci.yml); locally it
+  # comes from mise (`mise install node@20`).
+  def test_node_runtime_is_available
+    refute_empty node_path,
+                 "node runtime NOT FOUND on PATH. The modal-host store behavior suite " \
+                 "executes the store for real and is the only coverage of cardClasses() " \
+                 "resolution — skipping it would report green with zero coverage. " \
+                 "Install node (mise install node@20) and re-run."
+  end
+
   def test_store_behavior_under_node
-    node = `which node 2>/dev/null`.strip
-    skip "node runtime required for the store behavior suite (mise Node) — NOT covered elsewhere; run on a host with node" if node.empty?
+    node = node_path
 
     html = ActionView::Base.with_empty_template_cache
                            .with_view_paths(["app/views"])
@@ -32,6 +45,10 @@ class ModalHostStoreBehaviorTest < Minitest::Test
 
     assert $?.success?, "node harness failed:\n#{out}"
     assert_includes out, "ALL-MODAL-STORE-SCENARIOS-PASS", out
+  end
+
+  def node_path
+    @node_path ||= `which node 2>/dev/null`.strip
   end
 
   # Minimal browser stubs. The host script registers listeners on document

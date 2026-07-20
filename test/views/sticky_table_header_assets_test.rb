@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
+require "test_helper"
 require "uri"
 require "action_view"
-require "test_helper"
 
 class StickyTableHeaderAssetsTest < Minitest::Test
   def setup

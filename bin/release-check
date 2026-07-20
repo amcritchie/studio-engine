@@ -18,11 +18,23 @@ case "${1:-}" in
   "--build")
     build=1
     ;;
+  "--list")
+    # Print the run list (the tree-glob manifest minus RELEASE_CHECK_HIDE) and
+    # exit — lets test/lib/release_check_guard_test.rb assert the runner
+    # enumerates from the same source the guard checks against.
+    exec ruby bin/suite-guard --run-list
+    ;;
   *)
-    echo "Usage: bin/release-check [--build]" >&2
+    echo "Usage: bin/release-check [--build|--list]" >&2
     exit 64
     ;;
 esac
+
+# Explicit XXXXXX template: portable across BSD mktemp (macOS, where a bare
+# `-t prefix` works) and GNU mktemp (ubuntu-latest CI, which rejects a template
+# with too few X's). Getting this wrong reddens the CI lane but not local runs.
+suite_log="$(mktemp "${TMPDIR:-/tmp}/studio-engine-suite.XXXXXX")"
+trap 'rm -f "$suite_log"' EXIT
 
 echo "Ruby: $(ruby -v)"
 echo "Studio Engine: $(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"
@@ -54,34 +66,29 @@ ruby -rerb -e 'ARGV.each { |path| ERB.new(File.read(path)).src }; puts "Banner E
   app/views/studio/banners/_environment.html.erb \
   app/views/studio/banners/_impersonation.html.erb
 
-for test_file in \
-  test/lib/studio_test.rb \
-  test/lib/studio/color_scale_test.rb \
-  test/lib/studio/theme_resolver_test.rb \
-  test/lib/studio/impersonation_test.rb \
-  test/lib/studio/email_test.rb \
-  test/lib/studio/email_smoke_test.rb \
-  test/lib/studio/mail_transport_test.rb \
-  test/lib/studio/redis_test.rb \
-  test/lib/studio/cable_test.rb \
-  test/lib/studio/broadcastable_test.rb \
-  test/lib/studio/link_token_test.rb \
-  test/lib/studio/model_page_test.rb \
-  test/lib/studio_email_delivery_helper_test.rb \
-  test/views/sticky_table_header_assets_test.rb \
-  test/views/admin_models_table_helper_test.rb \
-  test/views/component_css_test.rb \
-  test/views/modal_host_test.rb \
-  test/views/modal_host_store_behavior_test.rb \
-  test/views/user_nav_test.rb \
-  test/integration/engine_rails_8_1_boot_test.rb \
-  test/integration/model_page_routes_test.rb \
-  test/integration/component_css_bundle_test.rb \
-  test/integration/tailwind_probe_build_test.rb \
-  test/integration/ui_primitives_render_test.rb
-do
-  ruby -Itest "$test_file"
-done
+# The suite enumerates by GLOB, not by curated list: bin/suite-guard --run-list
+# derives every test/**/*_test.rb from the tree, so a new test file is included
+# by construction. Review round 2 of this lane caught a curated list running 25
+# of 26 files — with the guard structurally unable to see the miss. There is no
+# list left to drift.
+#
+# RELEASE_CHECK_HIDE (colon-separated paths) removes files from the RUN list
+# only — never from the guard's manifest below — so hiding a file always
+# reddens the run. It is a mutation hook to prove the guard trips, not a way
+# to skip a failing test.
+while IFS= read -r test_file; do
+  echo "== $test_file"
+  echo "== $test_file" >> "$suite_log"
+  ruby -Itest "$test_file" 2>&1 | tee -a "$suite_log"
+done < <(ruby bin/suite-guard --run-list)
+
+# Gate the suite on EVIDENCE, not on the exit status alone. bin/suite-guard
+# re-globs the tree independently of the run list and fails if any test file
+# in the tree never ran (the round-2 blocker class), if a file was announced
+# but produced no minitest summary (it ran nothing), if it ran zero tests, or
+# if it skipped one — a skip reads as a pass. Unit-tested, mutation-first, in
+# test/lib/release_check_guard_test.rb.
+ruby bin/suite-guard "$suite_log"
 
 if [ "$build" -eq 1 ]; then
   version="$(ruby -Ilib -e 'require "studio/version"; print Studio::VERSION')"
