@@ -2,6 +2,16 @@
 
 The format is [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). This project follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html) — `MAJOR.MINOR.PATCH`. Consumer Rails apps install the released RubyGems package with `gem "studio-engine", "~> 0.6"`; bumping the gem version and updating consumer lockfiles is a release.
 
+## 0.14.0 — 2026-07-22
+
+### Added
+
+- **Passwordless engine login** — the stock `sessions/new` sign-in view now
+  renders its method set from `auth_methods`, so a host app configured for
+  passwordless sign-in gets the correct engine-shipped view with no local
+  override. Fixes a 500 in the passwordless path where the view assumed a
+  password field.
+
 ## 0.13.1 — 2026-07-19
 
 ### Changed
