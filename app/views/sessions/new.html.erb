@@ -35,36 +35,60 @@
         <%= render "sessions/sso_continue" if defined?(sso_user_available?) && sso_user_available? %>
       <% end %>
 
-      <%= form_tag login_path, method: :post do %>
-        <div class="mb-5">
-          <label for="email" class="block text-sm text-secondary mb-2 font-medium">Email</label>
-          <input type="email" name="email" id="email" value="<%= params[:email] %>" <%= 'autofocus' unless has_sso %>
-            x-ref="emailField"
-            class="input-field"
-            placeholder="you@example.com">
-        </div>
+      <%# The primary email form renders from the app's configured auth_methods: a PASSWORD
+          form only when passwords are available (Studio.password_login_available? — enabled AND
+          the User supports `authenticate`), otherwise the passwordless MAGIC-LINK request form.
+          The old hardcoded password field 500'd on every passwordless app's only sign-in path. %>
+      <% if Studio.password_login_available? %>
+        <%= form_tag login_path, method: :post do %>
+          <div class="mb-5">
+            <label for="email" class="block text-sm text-secondary mb-2 font-medium">Email</label>
+            <input type="email" name="email" id="email" value="<%= params[:email] %>" <%= 'autofocus' unless has_sso %>
+              x-ref="emailField"
+              class="input-field"
+              placeholder="you@example.com">
+          </div>
 
-        <div class="mb-6">
-          <label for="password" class="block text-sm text-secondary mb-2 font-medium">Password</label>
-          <input type="password" name="password" id="password"
-            class="input-field"
-            placeholder="Your password">
-        </div>
+          <div class="mb-6">
+            <label for="password" class="block text-sm text-secondary mb-2 font-medium">Password</label>
+            <input type="password" name="password" id="password"
+              class="input-field"
+              placeholder="Your password">
+          </div>
 
-        <button type="submit" class="btn btn-primary btn-lg w-full">
-          Log In
-        </button>
+          <button type="submit" class="btn btn-primary btn-lg w-full">
+            Log In
+          </button>
+        <% end %>
+      <% elsif Studio.auth_method?(:magic_link) %>
+        <%= form_tag magic_link_request_path, method: :post do %>
+          <div class="mb-5">
+            <label for="email" class="block text-sm text-secondary mb-2 font-medium">Email</label>
+            <input type="email" name="email" id="email" value="<%= params[:email] %>" <%= 'autofocus' unless has_sso %>
+              x-ref="emailField"
+              class="input-field"
+              placeholder="you@example.com">
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-full">
+            Send sign-in link
+          </button>
+        <% end %>
       <% end %>
 
-      <div class="relative my-6">
-        <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-subtle"></div></div>
-        <div class="relative flex justify-center text-sm"><span class="bg-surface px-3 text-secondary">or</span></div>
-      </div>
+      <% if Studio.auth_method?(:google) %>
+        <% if Studio.password_login_available? || Studio.auth_method?(:magic_link) %>
+          <div class="relative my-6">
+            <div class="absolute inset-0 flex items-center"><div class="w-full border-t border-subtle"></div></div>
+            <div class="relative flex justify-center text-sm"><span class="bg-surface px-3 text-secondary">or</span></div>
+          </div>
+        <% end %>
 
-      <%= button_to "/auth/google_oauth2", method: :post, data: { turbo: false },
-        class: "btn btn-google btn-lg w-full gap-3" do %>
-        <%= render "components/google_logo" %>
-        Sign in with Google
+        <%= button_to "/auth/google_oauth2", method: :post, data: { turbo: false },
+          class: "btn btn-google btn-lg w-full gap-3" do %>
+          <%= render "components/google_logo" %>
+          Sign in with Google
+        <% end %>
       <% end %>
 
       <p class="text-center text-secondary text-sm mt-6">

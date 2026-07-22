@@ -316,10 +316,13 @@ end
 
 `Studio.routes(self)` draws `POST /magic_link`, `GET /magic_link/:token`, and
 `POST /magic_link/:token` when `Studio.auth_methods` includes `:magic_link`.
-The stock engine auth views are still password-era views; for a passwordless
-app, override the sign-in page so the email form posts to
-`magic_link_request_path` and the Google button posts to `/auth/google_oauth2`.
-Use Turf Monster's `/signin` flow as the full-featured reference.
+The stock engine sign-in view now renders from `Studio.auth_methods`: a
+passwordless app gets the magic-link request form (posting to
+`magic_link_request_path`) and the Google button (`/auth/google_oauth2`) out of
+the box, and the password field appears only when `Studio.password_login_available?`
+(passwords enabled AND the User responds to `authenticate`). A passwordless app no
+longer needs to override the sign-in page for correctness — override it only for a
+bespoke layout. Use Turf Monster's `/signin` flow as the full-featured reference.
 
 ## 9. Layout
 
