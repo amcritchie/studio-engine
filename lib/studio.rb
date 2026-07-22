@@ -152,6 +152,28 @@ module Studio
     auth_methods.include?(method.to_sym)
   end
 
+  # True when the engine login should render a PASSWORD field/form: passwords are enabled
+  # (`:password` in auth_methods) AND the host User model actually supports them (responds to
+  # `authenticate` — i.e. `has_secure_password`). Both are required, and the second is the
+  # belt-and-suspenders: without it, a passwordless app (User with no `authenticate`) rendered
+  # the hardcoded password field and 500'd on submit via `user.authenticate` — the whole fleet
+  # having moved off passwords, this made the engine default wrong for every consumer. The User
+  # check is defensive of a mis-set auth_methods; the contract validation normally guarantees it
+  # (validate_user_contract! requires PASSWORD_USER_INSTANCE_METHODS iff auth_method?(:password)).
+  def self.password_login_available?
+    auth_method?(:password) && user_supports_password?
+  end
+
+  # Does the host User model respond to `authenticate` (has_secure_password)? Safe when no User
+  # is defined (an engine-only boot / a test with no host model) — answers false rather than raise.
+  def self.user_supports_password?
+    return false unless defined?(::User) && ::User.respond_to?(:instance_methods)
+
+    PASSWORD_USER_INSTANCE_METHODS.all? { |m| ::User.instance_methods.include?(m) }
+  rescue StandardError
+    false
+  end
+
   # True when the emailed/inbox magic-link URL is the short /l/<token> — i.e.
   # magic links are Studio::Link rows AND this app draws the /l routes. False =
   # the legacy /magic_link/<token> path: the :signed store, OR an app on the
